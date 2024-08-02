@@ -2,22 +2,39 @@
 	import { writable } from 'svelte/store';
 	import type { ActionData } from './$types';
 	import type { TournamentEventData, TournamentEventResponse } from '$lib/startql/result_types';
+	import { onMount } from 'svelte';
 
 	let tournamentName = writable('tech-chase-tuesday-78');
 	let tournamentResult = writable<TournamentEventData>();
+	let playerName = writable('');
 	let resultError = writable<string>();
 
 	async function searchTournament(name: string) {
 		tournamentResult.set(null);
 		const resp = await fetch(`/api/tournaments/${$tournamentName}`);
 		const tournament: TournamentEventResponse = await resp.json();
-		console.log(tournament);
 		if (tournament.event === null) {
 			resultError.set('No tournament found of name ' + name);
 		} else {
 			tournamentResult.set(tournament);
 		}
 	}
+
+	async function searchPlayer(name: string) {
+		playerName.set(null);
+		const resp = await fetch(`/api/players?name=${name}`);
+		const player = await resp.json();
+		console.log(player);
+		if (player.player === null) {
+			resultError.set('No player found of name ' + name);
+		} else {
+			playerName.set(player);
+		}
+	}
+
+	onMount(async () => {
+		searchPlayer('kusa');
+	});
 </script>
 
 <main class="text-9xl pt-2 p-4">

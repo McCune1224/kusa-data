@@ -16,23 +16,6 @@ export const startggClient = new GraphQLClient(endpoint, {
 	}
 });
 
-// export const getTournament = async (slug: string) => {
-// 	const query = gql`
-// 		query getEventId($slug: String) {
-// 			event(slug: $slug) {
-// 				id
-// 				name
-// 			}
-// 		}
-// 	`;
-//
-// 	const variables = {
-// 		slug: slug
-// 	};
-//
-// 	return startggClient.request<TournamentEventData>(query, variables);
-// };
-
 export const getTournament = async (slug: string) => {
 	const query: TypedDocumentNode<{ tournament: TournamentEventResponse }> = parse(gql`
 		query getEventId($slug: String) {
