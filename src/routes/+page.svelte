@@ -1,39 +1,41 @@
 <script lang="ts">
 	import { writable } from 'svelte/store';
 	import type { ActionData } from './$types';
-	import type { TournamentEventData, TournamentEventResponse } from '$lib/startql/result_types';
+	import type {
+		TournamentParticipantCountData,
+		TournamentParticipantCountResponse
+	} from '$lib/startql/result_types';
 	import { onMount } from 'svelte';
 
 	let tournamentName = writable('tech-chase-tuesday-78');
-	let tournamentResult = writable<TournamentEventData>();
-	let playerName = writable('');
 	let resultError = writable<string>();
+	let dumpy = writable<TournamentParticipantCountData>();
 
-	async function searchTournament(name: string) {
-		tournamentResult.set(null);
-		const resp = await fetch(`/api/tournaments/${$tournamentName}`);
-		const tournament: TournamentEventResponse = await resp.json();
-		if (tournament.event === null) {
+	// async function searchTournament(name: string) {
+	// 	tournamentResult.set();
+	// 	resultError.set('');
+	// 	const resp = await fetch(`/api/tournaments/${$tournamentName}`);
+	// 	const tournament: TournamentEventResponse = await resp.json();
+	// 	if (tournament.event === null) {
+	// 		resultError.set('No tournament found of name ' + name);
+	// 	} else {
+	// 		tournamentResult.set(tournament);
+	// 	}
+	// }
+
+	async function searchTournamentParticipants(name: string) {
+		resultError.set('');
+		const resp = await fetch(`/api/tournaments/${$tournamentName}/players`);
+		const result: TournamentParticipantCountResponse = await resp.json();
+		if (result.tournament === null) {
 			resultError.set('No tournament found of name ' + name);
 		} else {
-			tournamentResult.set(tournament);
-		}
-	}
-
-	async function searchPlayer(name: string) {
-		playerName.set(null);
-		const resp = await fetch(`/api/players?name=${name}`);
-		const player = await resp.json();
-		console.log(player);
-		if (player.player === null) {
-			resultError.set('No player found of name ' + name);
-		} else {
-			playerName.set(player);
+			dumpy.set(result);
 		}
 	}
 
 	onMount(async () => {
-		searchPlayer('kusa');
+		searchTournamentParticipants('tech-chase-tuesday-78');
 	});
 </script>
 
@@ -44,11 +46,12 @@
 	{/if}
 	<button
 		on:click={() => {
-			searchTournament($tournamentName);
+			searchTournamentParticipants($tournamentName);
 		}}>Search</button
 	>
-	{#if $tournamentResult}
-		<h2>{$tournamentResult.event.id}</h2>
-		<h2>{$tournamentResult.event.name}</h2>
+	{#if $dumpy}
+		<h2>{$dumpy.tournament.id}</h2>
+		<h2>{$dumpy.tournament.name}</h2>
+		<h2>Total Players: {$dumpy.tournament.participants.pageInfo.total}</h2>
 	{/if}
 </main>

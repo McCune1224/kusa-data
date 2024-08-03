@@ -1,14 +1,24 @@
-// export interface EmptyResult {}
-
-export interface TournamentEventData {
+export type TournamentEventData = {
 	event: {
 		id: number;
 		name: string;
 	};
-}
+};
 
-export interface NullTournamentEventData {
-	event: null;
-}
+export type TournamentEventResponse = TournamentEventData | { event: null };
 
-export type TournamentEventResponse = TournamentEventData | NullTournamentEventData;
+export type TournamentParticipantCountData = {
+	tournament: {
+		id: number;
+		name: String;
+		participants: {
+			pageInfo: {
+				total: number;
+			};
+		};
+	};
+};
+
+export type TournamentParticipantCountResponse =
+	| TournamentParticipantCountData
+	| { tournament: null };

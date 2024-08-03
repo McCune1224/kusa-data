@@ -1,7 +1,11 @@
 import { gql, GraphQLClient } from 'graphql-request';
 import { ACCESS_TOKEN } from '$env/static/private';
 import { parse } from 'graphql';
-import type { TournamentEventData, TournamentEventResponse } from './result_types';
+import type {
+	TournamentEventData,
+	TournamentEventResponse,
+	TournamentParticipantCountResponse
+} from './result_types';
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
 
 const endpoint = 'https://api.start.gg/gql/alpha';
@@ -17,7 +21,7 @@ export const startggClient = new GraphQLClient(endpoint, {
 });
 
 export const getTournament = async (slug: string) => {
-	const query: TypedDocumentNode<{ tournament: TournamentEventResponse }> = parse(gql`
+	const query: TypedDocumentNode<TournamentEventResponse> = parse(gql`
 		query getEventId($slug: String) {
 			event(slug: $slug) {
 				id
@@ -27,6 +31,27 @@ export const getTournament = async (slug: string) => {
 	`);
 	const variables = {
 		slug: `tournament/${slug}/event/smash-ultimate-singles`
+	};
+
+	return await startggClient.request({ document: query, variables });
+};
+
+export const getTournamentParticipants = async (tourneySlug: string) => {
+	const query: TypedDocumentNode<TournamentParticipantCountResponse> = parse(gql`
+		query AttendeeCount($tourneySlug: String!) {
+			tournament(slug: $tourneySlug) {
+				id
+				name
+				participants(query: {}) {
+					pageInfo {
+						total
+					}
+				}
+			}
+		}
+	`);
+	const variables = {
+		tourneySlug: tourneySlug
 	};
 
 	return await startggClient.request({ document: query, variables });
