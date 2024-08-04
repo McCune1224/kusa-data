@@ -15,7 +15,7 @@ const endpoint = 'https://api.start.gg/gql/alpha';
 export const startggClient = new GraphQLClient(endpoint, {
 	headers: {
 		authorization: `Bearer ${ACCESS_TOKEN}`,
-		// Highly recommended to set this header to prevent CORS issues
+		// Highly recommended for graphql to use POST requests
 		method: 'POST'
 	}
 });
