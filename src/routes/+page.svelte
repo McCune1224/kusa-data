@@ -8,8 +8,9 @@
 	<div class="mx-auto max-w-2xl text-center">
 		<h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">Kusa Data</h1>
 		<p class="mt-4 text-lg text-muted-foreground">
-			Type a tournament name or provide a tournament
-			<a href="https://start.gg" class="hover:underline link link-primary">start.gg</a> URL to get started
+			Type a
+			<a href="https://start.gg" class="hover:underline link link-primary">start.gg</a>
+			tournament name or provide a tournament URL to get started
 		</p>
 		<ParticipantCount />
 		<footer class="text-sm mt-12 flex flex-col items-center gap-2 text-muted-foreground">
