@@ -10,7 +10,7 @@ export type TournamentEventResponse = TournamentEventData | { event: null };
 export type TournamentParticipantCountData = {
 	tournament: {
 		id: number;
-		name: String;
+		name: string;
 		participants: {
 			pageInfo: {
 				total: number;

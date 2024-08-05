@@ -1,10 +1,13 @@
 <script lang="ts">
-	import type { TournamentParticipantCountResponse } from '$lib/startql/result_types';
+	import type {
+		TournamentParticipantCountData,
+		TournamentParticipantCountResponse
+	} from '$lib/startql/result_types';
 	import { writable } from 'svelte/store';
 
 	const resultError = writable<string>();
 	const tournamentName = writable<string>('tech-chase-tuesday-13');
-	const tournamentInfo = writable<TournamentParticipantCountResponse>();
+	const tournamentInfo = writable<TournamentParticipantCountData>();
 	const loading = writable<boolean>(false);
 
 	async function searchTournamentParticipants(name: string) {
@@ -50,14 +53,16 @@
 		{/if}
 	</div>
 	{#if $tournamentInfo}
-		<div class="gap-3 border-2 border-primary bg-base-300 rounded-lg p-4 flex flex-col">
+		<div class="gap-3 border-2 border-primary rounded-lg p-4 flex flex-col">
 			<p class="text-2xl font-bold">
 				{$tournamentInfo.tournament?.name} ({$tournamentInfo.tournament?.participants.pageInfo
 					.total} players)
 			</p>
-			<a href="#" class="btn">View All Players</a>
-			<a target="_blank" href={`https://start.gg/tournament/${$tournamentName}/details`} class="btn"
-				>View on start.gg</a
+			<a href={'tournaments/' + $tournamentName} class="btn btn-outline">View All Players</a>
+			<a
+				class="btn btn-outline"
+				target="_blank"
+				href={`https://start.gg/tournament/${$tournamentName}/details`}>View on start.gg</a
 			>
 		</div>
 	{/if}

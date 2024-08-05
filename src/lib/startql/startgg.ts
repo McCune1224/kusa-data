@@ -56,3 +56,33 @@ export const getTournamentParticipants = async (tourneySlug: string) => {
 
 	return await startggClient.request({ document: query, variables });
 };
+
+export const getFullTournamentParticipants = async (tourneySlug: string) => {
+	const query: TypedDocumentNode<any> = parse(gql`
+		query TournamentParticipants($tournamentSlug: String!) {
+			tournament(slug: $tournamentSlug) {
+				events {
+					id
+					name
+					entrants(query: {}) {
+						nodes {
+							id
+							name
+							participants {
+								id
+								gamerTag
+								user {
+									id
+									name
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	`);
+	const variables = {};
+
+	return await startggClient.request({ document: query, variables });
+};
