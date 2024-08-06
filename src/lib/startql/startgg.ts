@@ -4,11 +4,16 @@ import { parse } from 'graphql';
 import type {
 	TournamentEventData,
 	TournamentEventResponse,
-	TournamentParticipantCountResponse
+	TournamentParticipantCountResponse,
+	TournamentParticipantResponse
 } from './result_types';
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
 
 const endpoint = 'https://api.start.gg/gql/alpha';
+export const smashUltimateVideoGame = {
+	id: 1386,
+	name: 'Super Smash Bros. Ultimate'
+};
 
 //You may not average more than 80 requests per 60 seconds.
 //You are limited to a maximum of 1000 objects per request (this includes nested objects).
@@ -57,13 +62,20 @@ export const getTournamentParticipants = async (tourneySlug: string) => {
 	return await startggClient.request({ document: query, variables });
 };
 
-export const getFullTournamentParticipants = async (tourneySlug: string) => {
-	const query: TypedDocumentNode<any> = parse(gql`
-		query TournamentParticipants($tournamentSlug: String!) {
+export const getFullTournamentParticipants = async (
+	tournamentSlug: string,
+	videogameId: number = smashUltimateVideoGame.id
+) => {
+	const query: TypedDocumentNode<TournamentParticipantResponse> = parse(gql`
+		query TournamentParticipants($tournamentSlug: String!, $videogameId: [ID]!) {
 			tournament(slug: $tournamentSlug) {
-				events {
+				events(filter: { videogameId: $videogameId }) {
 					id
 					name
+					videogame {
+						id
+						name
+					}
 					entrants(query: {}) {
 						nodes {
 							id
@@ -72,6 +84,7 @@ export const getFullTournamentParticipants = async (tourneySlug: string) => {
 								id
 								gamerTag
 								user {
+									genderPronoun
 									id
 									name
 								}
@@ -82,7 +95,7 @@ export const getFullTournamentParticipants = async (tourneySlug: string) => {
 			}
 		}
 	`);
-	const variables = {};
+	const variables = { tournamentSlug: tournamentSlug, videogameId: videogameId };
 
 	return await startggClient.request({ document: query, variables });
 };

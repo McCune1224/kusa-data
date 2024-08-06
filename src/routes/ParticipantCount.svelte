@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type {
+		TournamentEventData,
+		TournamentEventResponse,
 		TournamentParticipantCountData,
 		TournamentParticipantCountResponse
 	} from '$lib/startql/result_types';
@@ -7,17 +9,17 @@
 
 	const resultError = writable<string>();
 	const tournamentName = writable<string>('tech-chase-tuesday-13');
-	const tournamentInfo = writable<TournamentParticipantCountData>();
+	const tournamentInfo = writable<TournamentEventData>();
 	const loading = writable<boolean>(false);
 
-	async function searchTournamentParticipants(name: string) {
+	async function searchTournament(name: string) {
 		loading.set(true);
 		resultError.set('');
 		console.log(name);
-		const resp = await fetch(`/api/tournaments/${name}/players`);
-		const result: TournamentParticipantCountResponse = await resp.json();
+		const resp = await fetch(`/api/tournaments/${name}`);
+		const result: TournamentEventResponse = await resp.json();
 		console.log(result);
-		if (result.tournament === null) {
+		if (result.event === null) {
 			resultError.set('No tournament found of name ' + name);
 		} else {
 			tournamentInfo.set(result);
@@ -41,7 +43,7 @@
 				on:click={() => {
 					//convert all whitespace to dashes first:
 					tournamentName.set($tournamentName.replace(/\s+/g, '-'));
-					searchTournamentParticipants($tournamentName);
+					searchTournament($tournamentName);
 				}}
 				class="btn join-item">Search</button
 			>
@@ -55,8 +57,7 @@
 	{#if $tournamentInfo}
 		<div class="gap-3 border-2 border-primary rounded-lg p-4 flex flex-col">
 			<p class="text-2xl font-bold">
-				{$tournamentInfo.tournament?.name} ({$tournamentInfo.tournament?.participants.pageInfo
-					.total} players)
+				{$tournamentInfo.event.name}
 			</p>
 			<a href={'tournaments/' + $tournamentName} class="btn btn-outline">View All Players</a>
 			<a
