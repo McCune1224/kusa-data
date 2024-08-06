@@ -4,12 +4,16 @@
 	export let player: Participant;
 </script>
 
-<a target="_blank" href="#" class="border-4 hover:border-info">
+<a
+	target="_blank"
+	href={`/players/${player.user.id.toString()}`}
+	class="border-4 hover:border-info"
+>
 	<div class="stat shadow">
 		{#if player.user.genderPronoun}
 			<div class="stat-title">{player.user.genderPronoun}</div>
 		{:else}
-			<div class="stat-title">?</div>
+			<div class="stat-title">...</div>
 		{/if}
 		<div class="stat-value">{player.gamerTag}</div>
 	</div>
