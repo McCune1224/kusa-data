@@ -41,7 +41,7 @@ export const getTournament = async (slug: string) => {
 	return await startggClient.request({ document: query, variables });
 };
 
-export const getTournamentParticipants = async (tourneySlug: string) => {
+export const getTournamentPartcicipantCount = async (tourneySlug: string) => {
 	const query: TypedDocumentNode<TournamentParticipantCountResponse> = parse(gql`
 		query AttendeeCount($tourneySlug: String!) {
 			tournament(slug: $tourneySlug) {
