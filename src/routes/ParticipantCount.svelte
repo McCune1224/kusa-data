@@ -12,17 +12,37 @@
 	const tournamentInfo = writable<TournamentEventData>();
 	const loading = writable<boolean>(false);
 
+	function parseTournamentSlug(url: string) {
+		//Needs to handle:
+		// https://www.start.gg/tournament/tech-chase-tuesday-63
+		// https://www.start.gg/tournament/tech-chase-tuesday-63/events
+
+		let isStartGg = url.includes('start.gg');
+		if (isStartGg) {
+			const split = url.split('/');
+			const end = split.pop();
+			if (end === 'events') {
+				return split.pop();
+			} else {
+				return end;
+			}
+		}
+		return url;
+	}
+
 	async function searchTournament(name: string) {
+		const search = parseTournamentSlug(name);
+		console.log(search);
 		loading.set(true);
 		resultError.set('');
-		console.log(name);
-		const resp = await fetch(`/api/tournaments/${name}`);
+		const resp = await fetch(`/api/tournaments/${search}`);
 		const result: TournamentEventResponse = await resp.json();
 		console.log(result);
 		if (result.event === null) {
-			resultError.set('No tournament found of name ' + name);
+			resultError.set('No tournament found of name ' + search);
 		} else {
 			tournamentInfo.set(result);
+			tournamentName.set(search as string);
 		}
 		loading.set(false);
 	}
@@ -42,7 +62,7 @@
 			<button
 				on:click={() => {
 					//convert all whitespace to dashes first:
-					tournamentName.set($tournamentName.replace(/\s+/g, '-'));
+					// tournamentName.set($tournamentName.replace(/\s+/g, '-'));
 					searchTournament($tournamentName);
 				}}
 				class="btn join-item">Search</button
