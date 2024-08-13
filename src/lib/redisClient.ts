@@ -1,13 +1,14 @@
-import { createClient } from 'redis';
+//ioredis use:
+import Redis from 'ioredis';
+import { REDIS_URL } from '$env/static/private';
 
-const client = createClient({
-  url: 'redis://localhost:6379', // Change this to your Redis server URL
-});
+//TODO: Find a better measurement for TTL
+const DEFAULT_TTL = 60 * 5000; // 5 minutes
+const redisClient = new Redis(REDIS_URL);
 
-client.on('error', (err) => console.error('Redis Client Error', err));
+// wrapper for redisClient.set with JSON.stringify and a default TTL of 5 minutes
+export function jsonSet(key: string, value: any, ttl: number = DEFAULT_TTL) {
+	return redisClient.set(key, JSON.stringify(value), 'EX', ttl);
+}
 
-(async () => {
-  await client.connect();
-})();
-
-export default client;
+export default redisClient;
