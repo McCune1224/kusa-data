@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getPlayerSets } from '$lib/startql/player';
+import { cacheFirst, SETS_TTL } from '$lib/redisClient';
 
 export const GET: RequestHandler = async (event) => {
 	const playerId = +event.params.id;
@@ -12,8 +13,15 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	try {
-		const result = await getPlayerSets(playerId, page, perPage);
-		return json(result.player.sets);
+		const { data } = await cacheFirst(
+			`playerSets:${playerId}:${page}`,
+			async () => {
+				const result = await getPlayerSets(playerId, page, perPage);
+				return result.player.sets;
+			},
+			SETS_TTL
+		);
+		return json(data);
 	} catch (e) {
 		console.error('Failed to fetch player sets:', e);
 		return json({ sets: [], pageInfo: { total: 0, totalPages: 0 } });
