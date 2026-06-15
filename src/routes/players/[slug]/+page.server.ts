@@ -1,4 +1,10 @@
-import { getPlayer, userTournamentHistory, type PlayerTournamentUser } from '$lib/startql/player';
+import {
+	getPlayer,
+	resolveGamerTag,
+	userTournamentHistory,
+	type PlayerTournamentUser
+} from '$lib/startql/player';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import redisClient, { jsonSet } from '$lib/redisClient';
 
@@ -6,12 +12,22 @@ export const load: PageServerLoad = async ({ params }) => {
 	const id = +params.slug;
 
 	if (isNaN(id)) {
+		// Try to resolve as a gamer tag
+		try {
+			const resolved = await resolveGamerTag(params.slug);
+			if (resolved) {
+				throw redirect(307, `/players/${resolved.id}`);
+			}
+		} catch (e) {
+			if (e instanceof Response) throw e; // re-throw redirect
+			console.error('Failed to resolve gamer tag:', e);
+		}
 		return { playerResponse: { user: null }, slug: params.slug, tournamentHistory: null };
 	}
 
 	let playerResponse;
 	try {
-		playerResponse = await getPlayer(+params.slug);
+		playerResponse = await getPlayer(id);
 	} catch (e) {
 		console.error('Failed to fetch player:', e);
 		return { playerResponse: { user: null }, slug: params.slug, tournamentHistory: null };

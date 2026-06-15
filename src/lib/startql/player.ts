@@ -155,6 +155,72 @@ export type PlayerEventStandingResponse = {
 	} | null;
 };
 
+export type PlayerSearchResult = {
+	id: number;
+	gamerTag: string | null;
+	prefix: string | null;
+	images: { url: string }[];
+};
+
+export type PlayerSearchResponse = {
+	users: {
+		nodes: {
+			id: number;
+			player: { id: number; gamerTag: string; prefix: string | null } | null;
+			images: { url: string }[];
+		}[];
+	};
+};
+
+export const searchPlayers = async (query: string) => {
+	const q: TypedDocumentNode<PlayerSearchResponse> = parse(gql`
+		query SearchPlayers($query: String!) {
+			users(query: { filter: { name: $query } }) {
+				nodes {
+					id
+					player {
+						id
+						gamerTag
+						prefix
+					}
+					images(type: "profile") {
+						url
+					}
+				}
+			}
+		}
+	`);
+	return await startggClient.request({
+		document: q,
+		variables: { query }
+	});
+};
+
+export const resolveGamerTag = async (gamerTag: string) => {
+	const q: TypedDocumentNode<PlayerSearchResponse> = parse(gql`
+		query ResolveGamerTag($query: String!) {
+			users(query: { filter: { name: $query } }) {
+				nodes {
+					id
+					player {
+						id
+						gamerTag
+						prefix
+					}
+					images(type: "profile") {
+						url
+					}
+				}
+			}
+		}
+	`);
+	const result = await startggClient.request({
+		document: q,
+		variables: { query: gamerTag }
+	});
+	return result.users.nodes[0] ?? null;
+};
+
 export const getEntrantStanding = async (eventID: number, entrantName: string) => {
 	const query: TypedDocumentNode<PlayerEventStandingResponse> = parse(gql`
 		query GetEntrantForEvent($eventID: ID!, $entrantName: String) {
