@@ -64,3 +64,53 @@ export type TournamentParticipantsData = {
 };
 
 export type TournamentParticipantResponse = TournamentParticipantsData | { tournament: null };
+
+// --- Set/Match types ---
+
+export type SetSlot = {
+	id: number;
+	entrant: { id: number; name: string } | null;
+	standing: {
+		id: number;
+		placement: number;
+		stats: { score: { value: number } } | null;
+	} | null;
+};
+
+export type GameSelection = {
+	entrant: { id: number };
+	selectionType: string | null;
+	character: { id: number; name: string } | null;
+};
+
+export type Game = {
+	orderNum: number;
+	winnerId: number | null;
+	stage: { id: number; name: string } | null;
+	selections: GameSelection[];
+	entrant1Score: number | null;
+	entrant2Score: number | null;
+};
+
+export type Set = {
+	id: number;
+	displayScore: string | null;
+	fullRoundText: string | null;
+	state: number;
+	completedAt: string | null;
+	vodUrl: string | null;
+	event: { id: number; name: string; slug: string };
+	slots: SetSlot[];
+	games: Game[];
+};
+
+export type PlayerSetsResponse = {
+	player: {
+		id: number;
+		gamerTag: string;
+		sets: {
+			nodes: Set[];
+			pageInfo: { total: number; totalPages: number };
+		};
+	};
+};

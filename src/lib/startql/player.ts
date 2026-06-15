@@ -1,6 +1,7 @@
 import { gql } from 'graphql-request';
 import { startggClient } from './startgg';
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
+import type { PlayerSetsResponse } from './result_types';
 import { parse } from 'graphql';
 
 export type PlayerData = {
@@ -219,6 +220,76 @@ export const resolveGamerTag = async (gamerTag: string) => {
 		variables: { query: gamerTag }
 	});
 	return result.users.nodes[0] ?? null;
+};
+
+export const getPlayerSets = async (playerId: number, page: number = 1, perPage: number = 25) => {
+	const q: TypedDocumentNode<PlayerSetsResponse> = parse(gql`
+		query PlayerSets($playerId: ID!, $page: Int!, $perPage: Int!) {
+			player(id: $playerId) {
+				id
+				gamerTag
+				sets(page: $page, perPage: $perPage) {
+					nodes {
+						id
+						displayScore
+						fullRoundText
+						state
+						completedAt
+						vodUrl
+						event {
+							id
+							name
+							slug
+						}
+						slots {
+							id
+							entrant {
+								id
+								name
+							}
+							standing {
+								id
+								placement
+								stats {
+									score {
+										value
+									}
+								}
+							}
+						}
+						games {
+							orderNum
+							winnerId
+							stage {
+								id
+								name
+							}
+							selections {
+								entrant {
+									id
+								}
+								selectionType
+								character {
+									id
+									name
+								}
+							}
+							entrant1Score
+							entrant2Score
+						}
+					}
+					pageInfo {
+						total
+						totalPages
+					}
+				}
+			}
+		}
+	`);
+	return await startggClient.request({
+		document: q,
+		variables: { playerId, page, perPage }
+	});
 };
 
 export const getEntrantStanding = async (eventID: number, entrantName: string) => {
