@@ -3,7 +3,11 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const name = params.slug;
-	const result = await getFullTournamentParticipants(name);
-	console.log(result.tournament?.events[0]?.entrants.nodes[0]?.participants[0].gamerTag);
-	return { params, result };
+	try {
+		const result = await getFullTournamentParticipants(name);
+		return { params, result };
+	} catch (e) {
+		console.error('Failed to fetch tournament participants:', e);
+		return { params, result: { tournament: null } };
+	}
 };

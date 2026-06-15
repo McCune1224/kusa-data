@@ -38,7 +38,7 @@ export type TournamentRecordEvent = {
 	id: number;
 	name: string;
 	numEntrants: number;
-	slug: number;
+	slug: string;
 	entrants: EventEntrantStanding;
 };
 export type PlayerTournamentRecord = {
@@ -145,14 +145,14 @@ export type EntrantEventStanding = {
 	};
 };
 export type PlayerEventStandingResponse = {
-	event:
-		| {
-				numEntrants: number;
-				nodes: {
-					standing: EntrantEventStanding;
-				}[];
-		  }
-		| { event: null };
+	event: {
+		numEntrants: number;
+		entrants: {
+			nodes: {
+				standing: EntrantEventStanding;
+			}[];
+		};
+	} | null;
 };
 
 export const getEntrantStanding = async (eventID: number, entrantName: string) => {

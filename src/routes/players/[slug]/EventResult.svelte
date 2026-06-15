@@ -1,12 +1,8 @@
 <script lang="ts">
-	import type { PlayerEventStandingResponse, TournamentRecordEvent } from '$lib/startql/player';
-	import { onMount } from 'svelte';
-	import { writable } from 'svelte/store';
+	import type { TournamentRecordEvent } from '$lib/startql/player';
 
 	export let event: TournamentRecordEvent;
 	export let gamerTag: string;
-
-	const eventRecord = writable<PlayerEventStandingResponse>();
 
 	function placementColorStyling(placement: number) {
 		if (placement === 1) {
@@ -14,8 +10,8 @@
 		} else if (placement === 2) {
 			return 'text-gray-500';
 		} else if (placement === 3) {
-			return 'text-brown-500';
-		} else placement === 4;
+			return 'text-amber-800';
+		}
 		return '';
 	}
 </script>

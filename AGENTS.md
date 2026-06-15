@@ -4,14 +4,14 @@ SvelteKit 2 app for looking up Super Smash Bros. Ultimate tournament data from t
 
 ## Commands
 
-| Command | What it does |
-|---------|-------------|
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | Production build (Vercel adapter via `@sveltejs/adapter-vercel`) |
-| `npm run preview` | Preview production build locally |
-| `npm run check` | Runs `svelte-kit sync` then `svelte-check` (type-checking) |
-| `npm run lint` | `prettier --check .` |
-| `npm run format` | `prettier --write .` |
+| Command           | What it does                                                     |
+| ----------------- | ---------------------------------------------------------------- |
+| `npm run dev`     | Vite dev server with HMR                                         |
+| `npm run build`   | Production build (Vercel adapter via `@sveltejs/adapter-vercel`) |
+| `npm run preview` | Preview production build locally                                 |
+| `npm run check`   | Runs `svelte-kit sync` then `svelte-check` (type-checking)       |
+| `npm run lint`    | `prettier --check .`                                             |
+| `npm run format`  | `prettier --write .`                                             |
 
 **No test framework is configured.** No test scripts, no test runner, no test files exist.
 
@@ -19,10 +19,10 @@ SvelteKit 2 app for looking up Super Smash Bros. Ultimate tournament data from t
 
 Must be set before `npm run dev` or `npm run build` (loaded via `$env/static/private`):
 
-| Variable | Used in | Purpose |
-|----------|---------|---------|
-| `REDIS_URL` | `src/lib/redisClient.ts` | Redis connection string for ioredis caching |
-| `ACCESS_TOKEN` | `src/lib/startql/startgg.ts` | start.gg API bearer token |
+| Variable       | Used in                      | Purpose                                     |
+| -------------- | ---------------------------- | ------------------------------------------- |
+| `REDIS_URL`    | `src/lib/redisClient.ts`     | Redis connection string for ioredis caching |
+| `ACCESS_TOKEN` | `src/lib/startql/startgg.ts` | start.gg API bearer token                   |
 
 `.env` and `.env.*` are gitignored. No `.env.example` currently exists — create a `.env` file locally.
 
@@ -44,14 +44,14 @@ Must be set before `npm run dev` or `npm run build` (loaded via `$env/static/pri
 
 ### Routes
 
-| Route | Type | Purpose |
-|-------|------|---------|
-| `/` | Page | Home page with tournament search widget |
-| `/tournaments/[slug]` | SSR page | Lists all Smash Ultimate entrants for a tournament |
-| `/players/[slug]` | SSR page | Shows a player's tournament history (Redis-cached) |
-| `/api/tournaments/[slug]` | API | Tournament event info |
-| `/api/tournaments/[slug]/players` | API | Full participant list |
-| `/api/event/[slug]/[gamerTag]` | API | Entrant standing |
+| Route                             | Type     | Purpose                                            |
+| --------------------------------- | -------- | -------------------------------------------------- |
+| `/`                               | Page     | Home page with tournament search widget            |
+| `/tournaments/[slug]`             | SSR page | Lists all Smash Ultimate entrants for a tournament |
+| `/players/[slug]`                 | SSR page | Shows a player's tournament history (Redis-cached) |
+| `/api/tournaments/[slug]`         | API      | Tournament event info                              |
+| `/api/tournaments/[slug]/players` | API      | Full participant list                              |
+| `/api/event/[slug]/[gamerTag]`    | API      | Entrant standing                                   |
 
 **Several API routes are incomplete stubs** (e.g. `/api/event`, `/api/players`).
 

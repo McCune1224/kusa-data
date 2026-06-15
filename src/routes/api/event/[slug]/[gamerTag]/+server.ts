@@ -10,8 +10,11 @@ export const GET: RequestHandler = async (event) => {
 		return json({ event: null });
 	}
 
-	const response = await getEntrantStanding(eventID, gamerTag);
-	console.log(response);
-
-	return json({ response });
+	try {
+		const response = await getEntrantStanding(eventID, gamerTag);
+		return json({ response });
+	} catch (e) {
+		console.error('Failed to fetch entrant standing:', e);
+		return json({ event: null });
+	}
 };

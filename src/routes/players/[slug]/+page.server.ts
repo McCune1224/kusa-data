@@ -9,7 +9,13 @@ export const load: PageServerLoad = async ({ params }) => {
 		return { playerResponse: { user: null }, slug: params.slug, tournamentHistory: null };
 	}
 
-	const playerResponse = await getPlayer(+params.slug);
+	let playerResponse;
+	try {
+		playerResponse = await getPlayer(+params.slug);
+	} catch (e) {
+		console.error('Failed to fetch player:', e);
+		return { playerResponse: { user: null }, slug: params.slug, tournamentHistory: null };
+	}
 	if (playerResponse.user === null) {
 		return { playerResponse: { user: null }, slug: params.slug, tournamentHistory: null };
 	}
@@ -23,14 +29,33 @@ export const load: PageServerLoad = async ({ params }) => {
 		};
 	}
 
-	const tournamentHistory = await userTournamentHistory(
-		id,
-		playerResponse.user.player.gamerTag,
-		1,
-		20
-	);
+	let tournamentHistory;
+	try {
+		tournamentHistory = await userTournamentHistory(
+			id,
+			playerResponse.user.player.gamerTag,
+			1,
+			100
+		);
 
-	await jsonSet(`playerTournaments:${id}`, tournamentHistory);
+		const totalPages = tournamentHistory.user.tournaments.pageInfo.totalPages;
+		if (totalPages > 1) {
+			const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+			const pageResults = await Promise.all(
+				remainingPages.map((page) =>
+					userTournamentHistory(id, playerResponse.user.player.gamerTag, page, 100)
+				)
+			);
+			for (const pageResult of pageResults) {
+				tournamentHistory.user.tournaments.nodes.push(...pageResult.user.tournaments.nodes);
+			}
+		}
+
+		await jsonSet(`playerTournaments:${id}`, tournamentHistory);
+	} catch (e) {
+		console.error('Failed to fetch tournament history:', e);
+		return { playerResponse: playerResponse, slug: params.slug, tournamentHistory: null };
+	}
 
 	return {
 		playerResponse: playerResponse,
