@@ -1,9 +1,4 @@
-import {
-	getPlayer,
-	resolveGamerTag,
-	userTournamentHistory,
-	type PlayerTournamentUser
-} from '$lib/startql/player';
+import { getPlayer, resolveGamerTag, userTournamentHistory } from '$lib/startql/player';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import redisClient, { jsonSet } from '$lib/redisClient';
