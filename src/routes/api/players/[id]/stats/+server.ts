@@ -6,7 +6,8 @@ import {
 	computeStreak,
 	computeBestWinStreak,
 	computeCharacterStats,
-	computeStageStats
+	computeStageStats,
+	computeElo
 } from '$lib/stats';
 
 export const GET: RequestHandler = async (event) => {
@@ -54,6 +55,12 @@ export const GET: RequestHandler = async (event) => {
 		const bestWinStreak = computeBestWinStreak(completedSets, playerEntrantId);
 		const characters = computeCharacterStats(completedSets, playerEntrantId);
 		const stages = computeStageStats(completedSets, playerEntrantId);
+		const elo = computeElo(completedSets, (set) => {
+			for (const slot of set.slots) {
+				if (slot.entrant?.id) return slot.entrant.id;
+			}
+			return null;
+		});
 
 		return json({
 			winLoss,
@@ -61,6 +68,7 @@ export const GET: RequestHandler = async (event) => {
 			bestWinStreak,
 			characters,
 			stages,
+			elo,
 			setCount: completedSets.length
 		});
 	} catch (e) {
