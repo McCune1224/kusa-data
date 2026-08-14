@@ -18,6 +18,15 @@ defmodule KusaData.Application do
       KusaDataWeb.Endpoint
     ]
 
+    children =
+      case Application.get_env(:kusa_data, KusaData.Cache, [])[:url] do
+        url when is_binary(url) and url != "" ->
+          children ++ [KusaData.Cache.Redis.child_spec(url)]
+
+        _ ->
+          children
+      end
+
     # See https://elixir.hexdocs.pm/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: KusaData.Supervisor]

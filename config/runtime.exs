@@ -26,6 +26,8 @@ config :kusa_data, KusaDataWeb.Endpoint,
 # start.gg API credentials and Redis cache, read from the environment at boot.
 config :kusa_data, KusaData.GraphQL.Client, token: System.get_env("ACCESS_TOKEN", "")
 
+config :kusa_data, KusaData.Cache, url: System.get_env("REDIS_URL", "")
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :kusa_data, KusaDataWeb.Endpoint,
