@@ -22,7 +22,13 @@ defmodule KusaData.SetDetails.API do
   end
 
   defp fetch_uncached(player_id, page, per_page) do
-    {query, variables} = SetDetails.player_sets_query(player_id, page, per_page)
-    Client.request(query, variables)
+    case Application.get_env(:kusa_data, __MODULE__, [])[:fetch] do
+      fetch when is_function(fetch, 3) ->
+        fetch.(player_id, page, per_page)
+
+      _ ->
+        {query, variables} = SetDetails.player_sets_query(player_id, page, per_page)
+        Client.request(query, variables)
+    end
   end
 end

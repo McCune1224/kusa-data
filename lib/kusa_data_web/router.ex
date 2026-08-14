@@ -17,7 +17,13 @@ defmodule KusaDataWeb.Router do
   scope "/", KusaDataWeb do
     pipe_through :browser
 
-    live "/", SearchLive
+    live "/", HomeLive
+    live "/rankings", RankingsLive
+    live "/players", PlayerSearchLive
+    live "/players/:id", PlayerLive
+    live "/vs", VSLive
+    live "/tournaments", TournamentLive
+    live "/tournaments/:slug", TournamentLive
   end
 
   # Other scopes may use custom stacks.

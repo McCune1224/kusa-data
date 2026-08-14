@@ -53,9 +53,11 @@ Loaded from `System.get_env` at runtime (dev/test/prod). `.env` and `.env.*` are
   Fixture-driven tests + Bypass for HTTP; never hits real start.gg in unit tests.
 - `lib/kusa_data/search.ex` — player search: Postgres index (crawled players) first, live
   participant scan fallback when no exact match, exact > prefix > substring ranking.
-- `lib/kusa_data_web/live/` — LiveViews: search combobox (`SearchLive` at `/`) exists;
-  Home / Rankings / Player / VS / Tournament still to come (see Next Steps).
-- `lib/kusa_data/cache.ex` — planned Redis cache wrapper (Redix) for on-demand start.gg responses.
+- `lib/kusa_data_web/live/` — LiveViews: Home (hero + search combobox), Rankings
+  (leaderboard + filter), Player (stats, set history, char/stage breakdown), PlayerSearch
+  (`/players?q=`), VS (two-panel compare + H2H), Tournament (roster + seed finder).
+- `lib/kusa_data/cache.ex` — Redis cache wrapper (Redix) for on-demand start.gg responses;
+  degrades to uncached fetches when Redis is unavailable.
 
 ## Data model (Ecto)
 
@@ -97,8 +99,18 @@ and cached in Redis — never stored in Postgres.**
 - [x] **M2 — start.gg client**: rate limiter, backoff, Bypass tests + live smoke.
 - [x] **M3 — Crawler**: window-walk, seen-set, error isolation, chronological Elo. Live smoke.
 - [x] **M4 — Search + lookup**: index-first search, live participant-scan fallback, ranked results.
-- [~] **M5 — LiveViews**: search combobox done (`SearchLive` at `/`, debounced, Postgres-index only,
-      55 tests). Remainder pending — see Next Steps.
+- [x] **M5 — LiveViews** (2026-08-14, 118 tests):
+  - `KusaData.Stats` (W/L, win rate, streaks, H2H over DB sets),
+  - `KusaData.Cache` (Redix, TTL, graceful bypass) + `KusaData.SetDetails`
+    (on-demand games/stages/characters from start.gg, Redis-cached) + pure
+    `SetDetails.Parse`,
+  - `KusaData.Rankings` context + leaderboard LiveView,
+  - `KusaData.Players` context + player LiveView (stats, set history,
+    character/stage breakdown),
+  - VS Mode (two-panel compare + H2H), player search results page,
+  - Tournament LiveView (roster + seed finder with URL normalizer),
+  - component kit (`KusaDataWeb.Kit`), design tokens, **daisyUI removed**,
+    theme toggle removed (light paper palette only).
 - [ ] **M6 — Polish + Fly.io deploy**: a11y audit, responsive check, Dockerfile + deploy smoke.
 - [x] **Migration (2026-08-14)**: SvelteKit app deleted, Elixir app moved to repo root,
       `ACCESS_TOKEN` wired into client + runtime config, Melee videogame_id fixed, dev DB wiped
@@ -106,16 +118,13 @@ and cached in Redis — never stored in Postgres.**
 
 ## Next Steps (current plan)
 
-1. **`lib/kusa_data/stats.ex`** — pure W/L, win rate, current/best streaks, set count, H2H record
-   between two players over DB sets. Unit tests first (red → green).
-2. **On-demand set details** — GraphQL query module for a player's sets with games/stages/
-   character selections + `lib/kusa_data/cache.ex` (Redix, TTL, graceful fallback).
-3. **LiveViews** (each with `Phoenix.LiveViewTest`; loading/empty/error states): global header
-   combobox + menu (Home/Rankings/VS/Tournament), Home hero, Rankings leaderboard (`ratings`),
-   Player page (stat grid, set history, char/stage breakdown via on-demand fetch), VS two-panel
-   compare + H2H, Tournament roster + seed finder (URL normalizer + seeding query).
-4. **Component kit + daisyUI removal** (restyle `SearchLive`, use tokens everywhere).
-5. **M6**: `mix precommit` + credo green, a11y/responsive pass, Fly.io deploy with live smoke.
+1. **M6 — Polish**: `mix precommit` + credo green (currently 118 tests), a11y audit
+   (contrast, focus, aria), responsive pass (mobile header, table overflow), manual browser
+   screenshots against the UI Standard.
+2. **Crawl scheduling** (deferred): periodic crawl (e.g. daily) so rankings stay fresh —
+   currently manual via `mix run -e 'KusaData.Crawl.run(1)'`.
+3. **Fly.io deploy**: Dockerfile + fly.toml, env vars (`DATABASE_URL`, `SECRET_KEY_BASE`,
+   `PHX_HOST`, `ACCESS_TOKEN`, `REDIS_URL`), `mix assets.deploy`, deployed smoke run.
 
 ## Operating rules for agents
 

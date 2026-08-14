@@ -9,11 +9,12 @@ defmodule KusaDataWeb.CoreComponents do
   them in any way you want, based on your application growth and needs.
 
   The foundation for styling is Tailwind CSS, a utility-first CSS framework,
-  augmented with daisyUI, a Tailwind CSS plugin that provides UI components
-  and themes. Here are useful references:
+  driven by the design tokens in `assets/css/app.css` (see `AGENTS.md` for
+  the UI Standard). Higher-level primitives live in `KusaDataWeb.Kit`. Here
+  are useful references:
 
-    * [daisyUI](https://daisyui.com/docs/intro/) - a good place to get
-      started and see the available components.
+    * [KusaDataWeb.Kit](KusaDataWeb.Kit) - the component kit (card, badge,
+      table, stat-grid, empty-state) used across every page.
 
     * [Tailwind CSS](https://tailwindcss.com) - the foundational framework
       we build on. You will use it for layout, sizing, flexbox, grid, and
@@ -63,13 +64,13 @@ defmodule KusaDataWeb.CoreComponents do
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
-      class="toast toast-top toast-end z-50"
+      class="fixed top-4 right-4 z-50 space-y-3"
       {@rest}
     >
       <div class={[
-        "alert w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        @kind == :info && "alert-info",
-        @kind == :error && "alert-error"
+        "flex w-80 max-w-80 items-start gap-3 rounded-lg border p-4 text-sm shadow-lg sm:w-96 sm:max-w-96",
+        @kind == :info && "border-line-strong bg-card text-ink",
+        @kind == :error && "border-danger/30 bg-accent-soft text-ink"
       ]}>
         <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
         <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
@@ -101,11 +102,17 @@ defmodule KusaDataWeb.CoreComponents do
   slot :inner_block, required: true
 
   def button(%{rest: rest} = assigns) do
-    variants = %{"primary" => "btn-primary", nil => "btn-primary btn-soft"}
+    variants = %{
+      "primary" => "bg-accent text-white hover:bg-accent-strong",
+      nil => "border border-line-strong bg-card text-ink hover:bg-paper-soft"
+    }
 
     assigns =
       assign_new(assigns, :class, fn ->
-        ["btn", Map.fetch!(variants, assigns[:variant])]
+        [
+          "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
+          Map.fetch!(variants, assigns[:variant])
+        ]
       end)
 
     if rest[:href] || rest[:navigate] || rest[:patch] do
@@ -212,7 +219,7 @@ defmodule KusaDataWeb.CoreComponents do
       end)
 
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="mb-4">
       <label for={@id}>
         <input
           type="hidden"
@@ -221,14 +228,14 @@ defmodule KusaDataWeb.CoreComponents do
           disabled={@rest[:disabled]}
           form={@rest[:form]}
         />
-        <span class="label">
+        <span class="text-sm font-medium text-ink-muted">
           <input
             type="checkbox"
             id={@id}
             name={@name}
             value="true"
             checked={@checked}
-            class={@class || "checkbox checkbox-sm"}
+            class={@class || "size-4 accent-accent"}
             {@rest}
           />{@label}
         </span>
@@ -240,13 +247,17 @@ defmodule KusaDataWeb.CoreComponents do
 
   def input(%{type: "select"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="mb-4">
       <label for={@id}>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class="mb-1 block text-sm font-medium text-ink-muted">{@label}</span>
         <select
           id={@id}
           name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
+          class={[
+            @class ||
+              "w-full rounded-md border border-line bg-card px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none",
+            @errors != [] && (@error_class || "border-danger")
+          ]}
           multiple={@multiple}
           {@rest}
         >
@@ -261,15 +272,16 @@ defmodule KusaDataWeb.CoreComponents do
 
   def input(%{type: "textarea"} = assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="mb-4">
       <label for={@id}>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class="mb-1 block text-sm font-medium text-ink-muted">{@label}</span>
         <textarea
           id={@id}
           name={@name}
           class={[
-            @class || "w-full textarea",
-            @errors != [] && (@error_class || "textarea-error")
+            @class ||
+              "w-full rounded-md border border-line bg-card px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none",
+            @errors != [] && (@error_class || "border-danger")
           ]}
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
@@ -282,17 +294,18 @@ defmodule KusaDataWeb.CoreComponents do
   # All other inputs text, datetime-local, url, password, etc. are handled here...
   def input(assigns) do
     ~H"""
-    <div class="fieldset mb-2">
+    <div class="mb-4">
       <label for={@id}>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class="mb-1 block text-sm font-medium text-ink-muted">{@label}</span>
         <input
           type={@type}
           name={@name}
           id={@id}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
           class={[
-            @class || "w-full input",
-            @errors != [] && (@error_class || "input-error")
+            @class ||
+              "w-full rounded-md border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20",
+            @errors != [] && (@error_class || "border-danger")
           ]}
           {@rest}
         />
@@ -305,7 +318,7 @@ defmodule KusaDataWeb.CoreComponents do
   # Helper used by inputs to generate form errors
   defp error(assigns) do
     ~H"""
-    <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
+    <p class="mt-1.5 flex gap-2 items-center text-sm text-danger">
       <.icon name="hero-exclamation-circle" class="size-5" />
       {render_slot(@inner_block)}
     </p>
@@ -326,7 +339,7 @@ defmodule KusaDataWeb.CoreComponents do
         <h1 class="text-lg font-semibold leading-8">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-sm text-base-content/70">
+        <p :if={@subtitle != []} class="text-sm text-ink-muted">
           {render_slot(@subtitle)}
         </p>
       </div>
@@ -367,7 +380,7 @@ defmodule KusaDataWeb.CoreComponents do
       end
 
     ~H"""
-    <table class="table table-zebra">
+    <table class="w-full min-w-160 text-sm [&_th]:border-b [&_th]:border-line [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_td]:border-b [&_td]:border-line/60 [&_td]:px-3 [&_td]:py-2 [&_tbody_tr:nth-child(odd)]:bg-paper/40">
       <thead>
         <tr>
           <th :for={col <- @col}>{col[:label]}</th>
@@ -414,9 +427,9 @@ defmodule KusaDataWeb.CoreComponents do
 
   def list(assigns) do
     ~H"""
-    <ul class="list">
-      <li :for={item <- @item} class="list-row">
-        <div class="list-col-grow">
+    <ul class="divide-y divide-line">
+      <li :for={item <- @item} class="py-3">
+        <div class="flex-1">
           <div class="font-bold">{item.title}</div>
           <div>{render_slot(item)}</div>
         </div>

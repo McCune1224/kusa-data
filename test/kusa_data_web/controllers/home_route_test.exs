@@ -1,4 +1,4 @@
-defmodule KusaDataWeb.PageControllerTest do
+defmodule KusaDataWeb.HomeRouteTest do
   use KusaDataWeb.ConnCase
 
   import Phoenix.LiveViewTest
@@ -19,11 +19,11 @@ defmodule KusaDataWeb.PageControllerTest do
 
   test "GET / renders the search LiveView", %{conn: conn} do
     conn = get(conn, ~p"/")
-    assert html_response(conn, 200) =~ "Player search"
+    assert html_response(conn, 200) =~ "Melee tournament analytics"
   end
 
   test "GET / is live", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/")
-    assert html =~ "Search players"
+    assert html =~ "Search players by gamer tag or prefix"
   end
 end

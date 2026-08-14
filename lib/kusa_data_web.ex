@@ -84,8 +84,10 @@ defmodule KusaDataWeb do
 
       # HTML escaping functionality
       import Phoenix.HTML
-      # Core UI components
-      import KusaDataWeb.CoreComponents
+      # Core UI components (button/table come from the app kit instead)
+      import KusaDataWeb.CoreComponents, except: [button: 1, table: 1]
+      # App component kit (card, badge, table, stat-grid, empty-state)
+      import KusaDataWeb.Kit
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

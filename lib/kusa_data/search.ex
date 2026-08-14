@@ -52,10 +52,16 @@ defmodule KusaData.Search do
       if Enum.any?(indexed, &(String.downcase(&1.gamer_tag || "") == q)) do
         []
       else
-        live_candidates(q)
+        live_scan().(q)
       end
 
     rank_candidates(dedupe_by_user_id(indexed, live), q)
+  end
+
+  # Test seam: `config :kusa_data, KusaData.Search, live_scan: fn q -> [] end`
+  defp live_scan do
+    Application.get_env(:kusa_data, __MODULE__, [])
+    |> Keyword.get(:live_scan, &live_candidates/1)
   end
 
   # Merges the live scan into the indexed batch, skipping user ids the index
@@ -88,6 +94,7 @@ defmodule KusaData.Search do
         gamer_tag: p.gamer_tag,
         prefix: p.prefix,
         player_id: p.player_id,
+        player_db_id: p.id,
         elo: r.elo
       }
     )

@@ -1,4 +1,4 @@
-defmodule KusaDataWeb.SearchLiveTest do
+defmodule KusaDataWeb.HomeLiveTest do
   use KusaDataWeb.ConnCase
 
   import Phoenix.LiveViewTest
@@ -49,8 +49,8 @@ defmodule KusaDataWeb.SearchLiveTest do
 
   test "renders the search box and no results initially", %{conn: conn} do
     {:ok, view, html} = live(conn, ~p"/")
-    assert html =~ "Player search"
-    assert html =~ "Search players"
+    assert html =~ "Melee tournament analytics"
+    assert html =~ "Search players by gamer tag or prefix"
     refute view |> element("[data-test=results]") |> render() =~ "Mango"
   end
 
