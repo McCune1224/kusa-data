@@ -111,7 +111,10 @@ and cached in Redis — never stored in Postgres.**
   - Tournament LiveView (roster + seed finder with URL normalizer),
   - component kit (`KusaDataWeb.Kit`), design tokens, **daisyUI removed**,
     theme toggle removed (light paper palette only).
-- [ ] **M6 — Polish + Fly.io deploy**: a11y audit, responsive check, Dockerfile + deploy smoke.
+- [ ] **M6 — Polish + Fly.io deploy**: a11y audit (contrast pass done — tokens all meet
+      WCAG AA; visual/screenshot review pending a human eye), responsive check, Fly deploy
+      config generated (`Dockerfile`, `fly.toml`, release overlay) — deployment itself needs
+      `flyctl` + secrets.
 - [x] **Migration (2026-08-14)**: SvelteKit app deleted, Elixir app moved to repo root,
       `ACCESS_TOKEN` wired into client + runtime config, Melee videogame_id fixed, dev DB wiped
       and re-crawled live (10 tournaments / 103 sets / 59 rated players).

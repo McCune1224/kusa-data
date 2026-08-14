@@ -31,4 +31,19 @@ mix run -e 'KusaData.Crawl.run(1)'
 - `mix precommit` — warnings-as-errors compile, format, test (run before finishing)
 - `mix credo` — lint
 
+## Deploy (Fly.io)
+
+Config is generated (`Dockerfile`, `fly.toml`, `rel/overlays/bin/server`) — deploying
+requires `flyctl` and a Fly account:
+
+```sh
+fly launch --no-deploy            # or adopt this repo with: fly apps create
+fly secrets set ACCESS_TOKEN=… REDIS_URL=… DATABASE_URL=… SECRET_KEY_BASE=$(mix phx.gen.secret)
+fly deploy
+```
+
+Postgres and Redis run as Fly managed services (or anywhere reachable);
+`DATABASE_URL` and `REDIS_URL` point at them. The crawler is manual for now:
+`fly ssh console -C "/app/bin/kusa_data eval 'KusaData.Crawl.run(1)'"`.
+
 See `AGENTS.md` for architecture, conventions, and milestones.

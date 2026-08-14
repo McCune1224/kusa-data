@@ -28,11 +28,11 @@
   /* Text */
   --color-ink: #1c1917;
   --color-ink-muted: #57534e;
-  --color-ink-faint: #8a857d;
+  --color-ink-faint: #6f6a62;
 
   /* Boundaries */
   --color-line: #e4ddd2;
-  --color-line-strong: #c9c0b1;
+  --color-line-strong: #8f8472;
 
   /* Accent (used sparingly: links, CTAs, selected states) */
   --color-accent: #b91c1c;
@@ -40,7 +40,7 @@
   --color-accent-soft: #fbecec;
 
   /* Status */
-  --color-success: #15803d;
+  --color-success: #137a37;
   --color-success-soft: #e8f4ec;
   --color-danger: #b91c1c;
 
