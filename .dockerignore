@@ -1,0 +1,17 @@
+# Build context keep-out list. Keep the context (and image build) small.
+.git
+.gitignore
+.env
+.dockerignore
+Dockerfile
+.opencode
+_build
+deps
+erl_crash.dump
+test
+cover
+doc
+README.md
+AGENTS.md
+assets/node_modules
+npm-debug.log
