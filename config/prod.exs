@@ -25,8 +25,9 @@ config :swoosh, api_client: Swoosh.ApiClient.Req
 # Disable Swoosh Local Memory Storage
 config :swoosh, local: false
 
-# Do not print debug messages in production
-config :logger, level: :info
+# Keep prod logs quiet: per-request and LiveView chatter happens at :info and
+# can blow past Railway's log-ingestion rate limit. Warnings/errors still show.
+config :logger, level: :warning
 
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.
