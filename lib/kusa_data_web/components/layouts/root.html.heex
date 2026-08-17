@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="KUSA DATA — browse Melee tournaments, seeds, results, and player analytics from the start.gg API."
+    />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title default="KUSA DATA" suffix=" · KUSA DATA" phx-no-format>{assigns[:page_title]}</.live_title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236366f1'/%3E%3Cpath d='M17 7l-7 10h5l-1 8 8-11h-5l0-7z' fill='white'/%3E%3C/svg%3E"
+    />
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
+    </script>
+  </head>
+  <body>
+    {@inner_content}
+  </body>
+</html>
