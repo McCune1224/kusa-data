@@ -35,14 +35,6 @@ kusa_data-*.tar
 npm-debug.log
 /assets/node_modules/
 
-# ElixirLS editor artifacts.
-/.elixir_ls/
+# Local secrets (start.gg token, Redis URL)
+/.env
 
-# Env
-.env
-.env.*
-!.env.example
-
-# OS
-.DS_Store
-Thumbs.db

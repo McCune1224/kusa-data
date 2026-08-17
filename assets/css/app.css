@@ -1,0 +1,167 @@
+@import "tailwindcss" source(none);
+@import "phoenix-colocated/kusa_data/colocated.css";
+@source "../css";
+@source "../js";
+@source "../../lib/kusa_data_web";
+/* Required for Tailwind to automatically pick up changes in colocated CSS files in dev */
+@source "../../_build/dev/phoenix-colocated/kusa_data/*/";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+@theme {
+  --animate-fade-up: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #0c0a09;
+  color: #d6d3d1;
+  font-family:
+    "Inter",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* A quiet drafting grid gives the landing page structure without turning the
+   background into decoration. */
+.desk-grid {
+  background-image:
+    linear-gradient(rgb(68 64 60 / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(68 64 60 / 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: center top;
+}
+
+::selection {
+  background-color: rgb(163 230 53 / 0.2);
+  color: #fafaf9;
+}
+
+/* ---- Skeleton shimmer (pair with a size/radius utility) ---- */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: rgb(41 37 36 / 0.7);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  animation: shimmer 1.6s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgb(68 64 60 / 0.4), transparent);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Horizontal hairline that fades out at both ends */
+.hairline {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(68 64 60 / 0.7) 20%,
+    rgb(68 64 60 / 0.7) 80%,
+    transparent
+  );
+  height: 1px;
+}
+
+/* Signature hover: an acid-lime rule slides in on the left edge */
+.rule-hover {
+  position: relative;
+}
+
+.rule-hover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background-color: #a3e635;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.rule-hover:hover::before {
+  opacity: 1;
+}
+
+/* Custom scrollbar to match the warm dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0c0a09;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #44403c;
+  border-radius: 5px;
+  border: 2px solid #0c0a09;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #57534e;
+}
+
+/* Coherent focus state for keyboard navigation */
+:focus-visible {
+  outline: 2px solid rgb(190 242 100 / 0.6);
+  outline-offset: 2px;
+}
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session],
+[data-phx-teleported-src] {
+  display: contents;
+}
+
+/* Honour users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
