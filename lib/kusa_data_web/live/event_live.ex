@@ -17,6 +17,9 @@ defmodule KusaDataWeb.EventLive do
        rows_all: [],
        total: 0,
        identifier: nil,
+       game_slug: nil,
+       recap: nil,
+       watched: false,
        nav: :tournaments
      )
      |> stream_configure(:rows, dom_id: fn row -> "row-#{row["id"] || row["entrant_id"]}" end)}
@@ -25,7 +28,7 @@ defmodule KusaDataWeb.EventLive do
   @impl true
   def handle_params(params, _uri, socket) do
     identifier = params["event"]
-    tab = if params["tab"] in ["seeds", "results"], do: params["tab"], else: "seeds"
+    tab = if params["tab"] in ["seeds", "results", "standings"], do: params["tab"], else: "seeds"
 
     socket =
       socket
@@ -34,8 +37,8 @@ defmodule KusaDataWeb.EventLive do
         event: nil,
         error: nil,
         loading: true,
-        rows_all: [],
-        identifier: identifier
+        game_slug: game_slug_from_params(params["game"]),
+        watched: watch_status(socket.assigns.current_user, identifier)
       )
       |> spawn_event_load()
 
@@ -47,7 +50,16 @@ defmodule KusaDataWeb.EventLive do
     case result do
       {:ok, event, _status} ->
         tab = socket.assigns.tab
-        socket = socket |> assign(event: event, error: nil, event_ref: nil)
+
+        socket =
+          socket
+          |> assign(
+            event: event,
+            error: nil,
+            event_ref: nil,
+            game_slug: game_slug_from_event(event)
+          )
+
         {:noreply, spawn_tab_load(socket, event, tab)}
 
       {:error, reason} ->
@@ -64,10 +76,34 @@ defmodule KusaDataWeb.EventLive do
     socket = assign(socket, tab_ref: nil)
 
     case result do
-      {:ok, rows, _status} ->
+      {:ok, %{"analysis" => %{} = analysis}, _status} ->
+        rows = analysis["entrants"]
+        recap = KusaData.Stats.BracketEngine.recap(analysis)
+        anomalies = analysis["anomalies"]
+
         socket =
           socket
-          |> assign(loading: false, total: length(rows), rows_all: rows)
+          |> assign(
+            loading: false,
+            total: length(rows),
+            rows_all: rows,
+            recap: recap,
+            anomalies: anomalies
+          )
+          |> stream(:rows, rows, reset: true)
+
+        {:noreply, socket}
+
+      {:ok, rows, _status} when is_list(rows) ->
+        socket =
+          socket
+          |> assign(
+            loading: false,
+            total: length(rows),
+            rows_all: rows,
+            recap: nil,
+            anomalies: []
+          )
           |> stream(:rows, rows, reset: true)
 
         {:noreply, socket}
@@ -75,7 +111,7 @@ defmodule KusaDataWeb.EventLive do
       {:error, reason} ->
         {:noreply,
          socket
-         |> assign(loading: false, error: reason, rows_all: [])
+         |> assign(loading: false, error: reason, rows_all: [], recap: nil, anomalies: [])
          |> stream(:rows, [], reset: true)}
     end
   end
@@ -105,6 +141,7 @@ defmodule KusaDataWeb.EventLive do
         case tab do
           "seeds" -> Events.seeding(event["id"])
           "results" -> Events.results(event["id"])
+          "standings" -> Events.analytics(event["id"])
         end
 
       send(parent, {:tab_loaded, ref, result})
@@ -142,6 +179,48 @@ defmodule KusaDataWeb.EventLive do
     {:noreply, push_patch(socket, to: ~p"/event/#{socket.assigns.event["id"]}?tab=results")}
   end
 
+  @impl true
+  def handle_event("tab-standings", _params, socket) do
+    {:noreply, push_patch(socket, to: ~p"/event/#{socket.assigns.event["id"]}?tab=standings")}
+  end
+
+  @impl true
+  def handle_event("watch", _params, socket) do
+    if socket.assigns.current_user do
+      {:ok, _} =
+        KusaData.Watches.watch(socket.assigns.current_user, "event", socket.assigns.identifier)
+
+      {:noreply, assign(socket, watched: true) |> put_flash(:info, "Event watch enabled.")}
+    else
+      {:noreply,
+       push_navigate(
+         socket,
+         to:
+           "/auth?mode=login&return_to=#{URI.encode_www_form("/event/#{socket.assigns.identifier}")}"
+       )}
+    end
+  end
+
+  @impl true
+  def handle_event("unwatch", _params, socket) do
+    if socket.assigns.current_user do
+      :ok =
+        KusaData.Watches.unwatch(socket.assigns.current_user, "event", socket.assigns.identifier)
+
+      {:noreply, assign(socket, watched: false) |> put_flash(:info, "Event watch removed.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp watch_status(nil, _id), do: false
+
+  defp watch_status(user, id) do
+    if KusaData.Accounts.repo_configured?(),
+      do: KusaData.Watches.watched?(user, "event", id),
+      else: false
+  end
+
   defp filter_rows(rows, ""), do: rows
 
   defp filter_rows(rows, filter) do
@@ -155,7 +234,7 @@ defmodule KusaDataWeb.EventLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} nav={@nav}>
+    <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
       <div>
         <%= if @event do %>
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -163,12 +242,21 @@ defmodule KusaDataWeb.EventLive do
               variant="ghost"
               size="sm"
               icon="hero-arrow-left"
-              navigate={~p"/tournament/#{bare_slug(@event["tournament"]["slug"])}"}
+              navigate={tournament_back_path(@event["tournament"]["slug"], @game_slug)}
             >
               {@event["tournament"]["name"]}
             </.btn>
 
             <div class="flex shrink-0 items-center gap-1">
+              <%= if @watched do %>
+                <.btn variant="ghost" size="sm" icon="hero-bell-slash" phx-click="unwatch">
+                  Watching
+                </.btn>
+              <% else %>
+                <.btn variant="ghost" size="sm" icon="hero-bell" phx-click="watch">
+                  Watch
+                </.btn>
+              <% end %>
               <.btn
                 variant="ghost"
                 size="sm"
@@ -193,9 +281,14 @@ defmodule KusaDataWeb.EventLive do
 
           <div class="mt-5">
             <p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">Event</p>
-            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-stone-50">
-              {@event["name"]}
-            </h1>
+            <div class="mt-2 flex flex-wrap items-center gap-3">
+              <h1 class="text-2xl font-semibold tracking-tight text-stone-50">
+                {@event["name"]}
+              </h1>
+              <%= if @game_slug do %>
+                <.badge tone="accent">{game_label(@game_slug)}</.badge>
+              <% end %>
+            </div>
             <div class="mt-2 flex flex-wrap items-center gap-2 text-[15px] text-stone-400">
               <span>{@event["numEntrants"] || 0} entrants</span>
               <.badge tone={state_tone(@event["state"])} dot>
@@ -204,7 +297,7 @@ defmodule KusaDataWeb.EventLive do
             </div>
           </div>
 
-          <div class="mt-8 grid grid-cols-2 gap-1 rounded-xl border border-stone-800 bg-stone-900/60 p-1 sm:inline-grid">
+          <div class="mt-8 grid grid-cols-3 gap-1 rounded-xl border border-stone-800 bg-stone-900/60 p-1 sm:inline-grid">
             <button
               type="button"
               id="tab-seeds"
@@ -223,6 +316,16 @@ defmodule KusaDataWeb.EventLive do
             >
               <.icon name="hero-trophy" class="size-4" />
               <span>Results</span>
+              <span class="font-mono">· {@total}</span>
+            </button>
+            <button
+              type="button"
+              id="tab-standings"
+              phx-click="tab-standings"
+              class={tab_class(@tab == "standings")}
+            >
+              <.icon name="hero-chart-bar" class="size-4" />
+              <span>Standings</span>
               <span class="font-mono">· {@total}</span>
             </button>
           </div>
@@ -251,6 +354,12 @@ defmodule KusaDataWeb.EventLive do
             <div class="flex items-center gap-4 border-b border-stone-800 bg-stone-900/60 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
               <div class="w-16 shrink-0"></div>
               <div class="flex-1">Entrant</div>
+              <div :if={@tab == "standings"} class="hidden w-28 shrink-0 justify-end sm:flex">
+                Sets
+              </div>
+              <div :if={@tab == "standings"} class="hidden w-16 shrink-0 justify-end sm:flex">
+                Δ
+              </div>
               <div class="hidden w-24 shrink-0 justify-end sm:flex"></div>
             </div>
 
@@ -276,30 +385,68 @@ defmodule KusaDataWeb.EventLive do
                   class={row_class(@tab, row)}
                 >
                   <div class="w-16 shrink-0 font-mono text-sm">
-                    <%= if @tab == "seeds" do %>
-                      <%= if tone = seed_badge_tone(row["seed"]) do %>
-                        <.badge tone={tone} class="font-mono">
-                          {seed_badge(row["seed"])}
-                        </.badge>
-                      <% else %>
-                        <span class="text-stone-500">{seed_badge(row["seed"])}</span>
-                      <% end %>
-                    <% else %>
-                      <span class={["font-bold", placement_class(row["placement"])]}>
-                        #{row["placement"]}
-                      </span>
+                    <%= cond do %>
+                      <% @tab == "seeds" -> %>
+                        <%= if tone = seed_badge_tone(row["seed"]) do %>
+                          <.badge tone={tone} class="font-mono">
+                            {seed_badge(row["seed"])}
+                          </.badge>
+                        <% else %>
+                          <span class="text-stone-500">{seed_badge(row["seed"])}</span>
+                        <% end %>
+                      <% @tab == "standings" -> %>
+                        <span class={["font-bold", placement_class(row["placement"])]}>
+                          #{row["placement"]}
+                        </span>
+                      <% true -> %>
+                        <span class={["font-bold", placement_class(row["placement"])]}>
+                          #{row["placement"]}
+                        </span>
                     <% end %>
                   </div>
                   <div class="min-w-0 flex-1 truncate text-[15px] font-medium text-stone-200">
                     <%= if row["player_id"] do %>
                       <.link
-                        navigate={~p"/player/#{row["player_id"]}"}
+                        navigate={player_link(@game_slug, row["player_id"])}
                         class="truncate transition-colors hover:text-lime-300"
                       >
                         {row["name"]}
                       </.link>
                     <% else %>
                       {row["name"]}
+                    <% end %>
+                    <%= if @tab == "standings" && row["reason"] do %>
+                      <.badge tone={reason_tone(row["reason"])} class="ml-2">
+                        {reason_label(row["reason"])}
+                      </.badge>
+                    <% end %>
+                  </div>
+                  <div :if={@tab == "standings"} class="hidden w-28 shrink-0 justify-end sm:flex">
+                    <span class="font-mono text-[13px]">
+                      <span class={
+                        if(row["wins"] >= row["losses"],
+                          do: "text-emerald-400",
+                          else: "text-stone-400"
+                        )
+                      }>
+                        {row["wins"]}W
+                      </span>
+                      <span class="mx-1 text-stone-600">-</span>
+                      <span class={
+                        if(row["losses"] > row["wins"], do: "text-rose-400", else: "text-stone-400")
+                      }>
+                        {row["losses"]}L
+                      </span>
+                      <span class="ml-1.5 text-stone-600">({row["games_won"]}-{row["games_lost"]})</span>
+                    </span>
+                  </div>
+                  <div :if={@tab == "standings"} class="hidden w-16 shrink-0 justify-end sm:flex">
+                    <%= if is_integer(row["seed_delta"]) do %>
+                      <span class={delta_class(row["seed_delta"])}>
+                        {if row["seed_delta"] > 0, do: "+", else: ""}{row["seed_delta"]}
+                      </span>
+                    <% else %>
+                      <span class="text-stone-600">—</span>
                     <% end %>
                   </div>
                   <div class="hidden w-24 shrink-0 justify-end sm:flex">
@@ -311,6 +458,65 @@ defmodule KusaDataWeb.EventLive do
               </div>
             <% end %>
           </div>
+
+          <%= if @tab == "standings" && @recap do %>
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <.card class="p-5 md:col-span-2">
+                <div class="flex items-center gap-2">
+                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                    Tournament recap
+                  </h2>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <.stat label="Entrants" value={@recap["entrant_count"]} />
+                  <.stat label="Matches" value={@recap["match_count"]} />
+                  <.stat
+                    label="Avg sets / entrant"
+                    value={
+                      if(is_number(@recap["avg_sets_per_entrant"]),
+                        do: @recap["avg_sets_per_entrant"],
+                        else: "—"
+                      )
+                    }
+                  />
+                  <.stat
+                    label="DQ rate"
+                    value={
+                      if(is_number(@recap["dq_rate"]),
+                        do: "#{@recap["dq_rate"]}%",
+                        else: "unavailable"
+                      )
+                    }
+                  />
+                </div>
+              </.card>
+
+              <.card class="p-5">
+                <div class="flex items-center gap-2">
+                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                    Bracket anomalies
+                  </h2>
+                  <span class="font-mono text-[13px] text-stone-500">{length(@anomalies)}</span>
+                </div>
+                <div id="anomalies" class="mt-4 space-y-2">
+                  <div class="hidden only:block text-sm text-stone-500">
+                    No changed seeds, reseeds, or unseeded top finishes.
+                  </div>
+                  <div
+                    :for={anomaly <- @anomalies}
+                    class="flex items-center justify-between gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-stone-900/60"
+                  >
+                    <span class="min-w-0 truncate text-[15px] font-medium text-stone-200">
+                      {anomaly["name"]}
+                    </span>
+                    <.badge tone={reason_tone(anomaly["reason"])}>
+                      {reason_label(anomaly["reason"])}
+                    </.badge>
+                  </div>
+                </div>
+              </.card>
+            </div>
+          <% end %>
         <% else %>
           <%= if @loading do %>
             <div class="mt-6 space-y-3">
@@ -372,6 +578,15 @@ defmodule KusaDataWeb.EventLive do
       "flex items-center gap-4 border-b border-stone-800/70 bg-stone-900/40 px-5 py-3 transition-colors last:border-b-0 hover:bg-stone-900/70 " <>
         top8_highlight(row["placement"])
 
+  defp row_class("standings", row),
+    do:
+      "flex items-center gap-4 border-b border-stone-800/70 bg-stone-900/40 px-5 py-3 transition-colors last:border-b-0 hover:bg-stone-900/70 " <>
+        top8_highlight(row["placement"])
+
+  defp row_class(_tab, _row),
+    do:
+      "flex items-center gap-4 border-b border-stone-800/70 bg-stone-900/40 px-5 py-3 transition-colors last:border-b-0 hover:bg-stone-900/70"
+
   defp top8_highlight(placement) when placement in [1, 2, 3], do: "bg-amber-400/5"
   defp top8_highlight(placement) when placement in 4..8, do: "bg-lime-400/5"
   defp top8_highlight(_), do: ""
@@ -396,6 +611,54 @@ defmodule KusaDataWeb.EventLive do
 
   defp filter_placeholder("seeds"), do: "Filter by tag…"
   defp filter_placeholder("results"), do: "Filter by tag…"
+  defp filter_placeholder("standings"), do: "Filter by tag…"
+
+  defp reason_tone("reseeded"), do: "emerald"
+  defp reason_tone("unseeded_top_finish"), do: "amber"
+  defp reason_tone("changed_seed"), do: "rose"
+  defp reason_tone(_), do: "neutral"
+
+  defp reason_label("reseeded"), do: "reseeded"
+  defp reason_label("unseeded_top_finish"), do: "unseeded top finish"
+  defp reason_label("changed_seed"), do: "changed seed"
+  defp reason_label(reason), do: reason
+
+  defp delta_class(delta) when delta >= 2, do: "font-bold text-emerald-400"
+  defp delta_class(delta) when delta <= -2, do: "font-bold text-rose-400"
+  defp delta_class(_), do: "text-stone-500"
+
+  # The event's own game identity is canonical; the URL param is only a
+  # fallback for links that were built before the event data arrived.
+  defp game_slug_from_event(event) do
+    case KusaData.Games.normalize(event["videogame"]) do
+      %{slug: slug} -> slug
+      _ -> nil
+    end
+  end
+
+  defp game_slug_from_params(nil), do: nil
+
+  defp game_slug_from_params(slug) when is_binary(slug) do
+    case KusaData.Games.by_slug(slug) do
+      %{slug: _} -> slug
+      nil -> nil
+    end
+  end
+
+  defp game_slug_from_params(_), do: nil
+
+  defp player_link(nil, player_id), do: ~p"/player/#{player_id}"
+  defp player_link(game, player_id), do: ~p"/game/#{game}/player/#{player_id}"
+
+  defp tournament_back_path(slug, nil), do: ~p"/tournament/#{bare_slug(slug)}"
+  defp tournament_back_path(slug, game), do: ~p"/tournament/#{bare_slug(slug)}?game=#{game}"
+
+  defp game_label(slug) do
+    case KusaData.Games.by_slug(slug) do
+      %{short_name: name} -> name
+      nil -> slug
+    end
+  end
 
   defp state_tone(state) when state in ["COMPLETED", 3], do: "emerald"
   defp state_tone(state) when state in ["ACTIVE", 2], do: "amber"

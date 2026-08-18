@@ -1,18 +1,39 @@
 defmodule KusaDataWeb.PlayerLive do
   use KusaDataWeb, :live_view
 
+  alias KusaData.Games
   alias KusaData.Stats
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
-     assign(socket, stats: nil, error: nil, loading: true, player_id: nil, nav: :tournaments)}
+     assign(socket,
+       stats: nil,
+       error: nil,
+       loading: true,
+       player_id: nil,
+       game: nil,
+       watched: false,
+       nav: :tournaments
+     )}
   end
 
   @impl true
-  def handle_params(%{"id" => player_id}, _uri, socket) do
-    socket = assign(socket, player_id: player_id, stats: nil, error: nil, loading: true)
-    socket = spawn_stats_load(socket, player_id)
+  def handle_params(params, _uri, socket) do
+    player_id = params["id"]
+    game = valid_game(params["game"])
+
+    socket =
+      assign(socket,
+        player_id: player_id,
+        game: game,
+        watched: watch_status(socket.assigns.current_user, player_id),
+        stats: nil,
+        error: nil,
+        loading: true
+      )
+
+    socket = spawn_stats_load(socket, player_id, game)
     {:noreply, socket}
   end
 
@@ -31,30 +52,78 @@ defmodule KusaDataWeb.PlayerLive do
     {:noreply, socket}
   end
 
-  defp spawn_stats_load(socket, player_id) do
+  defp spawn_stats_load(socket, player_id, game) do
     ref = make_ref()
     parent = self()
 
     Task.start(fn ->
-      send(parent, {:stats_loaded, ref, Stats.for_player(player_id)})
+      send(parent, {:stats_loaded, ref, Stats.for_player(player_id, game)})
     end)
 
     assign(socket, stats_ref: ref)
   end
 
+  defp valid_game(nil), do: nil
+
+  defp valid_game(slug) when is_binary(slug) do
+    case Games.by_slug(slug) do
+      %{slug: _} -> slug
+      nil -> nil
+    end
+  end
+
+  defp valid_game(_), do: nil
+
   @impl true
   def handle_event("refresh", _params, socket) do
     player_id = socket.assigns.player_id || socket.assigns.stats["player_id"]
-    Stats.clear_cache(player_id)
+    Stats.clear_cache(player_id, socket.assigns.game)
 
     socket = assign(socket, stats: nil, loading: true)
-    {:noreply, spawn_stats_load(socket, player_id)}
+    {:noreply, spawn_stats_load(socket, player_id, socket.assigns.game)}
+  end
+
+  @impl true
+  def handle_event("watch", _params, socket) do
+    if socket.assigns.current_user do
+      {:ok, _} =
+        KusaData.Watches.watch(socket.assigns.current_user, "player", socket.assigns.player_id)
+
+      {:noreply, assign(socket, watched: true) |> put_flash(:info, "Player watch enabled.")}
+    else
+      {:noreply,
+       push_navigate(
+         socket,
+         to:
+           "/auth?mode=login&return_to=#{URI.encode_www_form("/player/#{socket.assigns.player_id}")}"
+       )}
+    end
+  end
+
+  @impl true
+  def handle_event("unwatch", _params, socket) do
+    if socket.assigns.current_user do
+      :ok =
+        KusaData.Watches.unwatch(socket.assigns.current_user, "player", socket.assigns.player_id)
+
+      {:noreply, assign(socket, watched: false) |> put_flash(:info, "Player watch removed.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp watch_status(nil, _id), do: false
+
+  defp watch_status(user, id) do
+    if KusaData.Accounts.repo_configured?(),
+      do: KusaData.Watches.watched?(user, "player", id),
+      else: false
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} nav={@nav}>
+    <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
       <div>
         <%= cond do %>
           <% is_nil(@stats) and @loading -> %>
@@ -90,9 +159,39 @@ defmodule KusaDataWeb.PlayerLive do
             <div class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
               Player analytics
             </div>
-            <div class="mt-3">
-              <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={back_path(@game)}>
                 Back
+              </.btn>
+              <%= if @game do %>
+                <.link
+                  navigate={~p"/game/#{@game}"}
+                  class="rounded-none border border-stone-700/70 px-2.5 py-1 font-mono text-xs text-stone-400 transition-colors hover:text-stone-100"
+                >
+                  {game_label(@game)}
+                </.link>
+              <% end %>
+              <span class="mx-1 hidden h-5 w-px bg-stone-800 sm:block"></span>
+              <.btn
+                variant="ghost"
+                size="sm"
+                navigate={"/player/#{@stats["player_id"]}/history" <> game_query(@game)}
+              >
+                Full history
+              </.btn>
+              <.btn
+                variant="ghost"
+                size="sm"
+                navigate={"/player/#{@stats["player_id"]}/trend" <> game_query(@game)}
+              >
+                Trend
+              </.btn>
+              <.btn
+                variant="ghost"
+                size="sm"
+                navigate={"/players/compare?a=#{@stats["player_id"]}" <> compare_query(@game)}
+              >
+                Compare
               </.btn>
             </div>
 
@@ -108,15 +207,26 @@ defmodule KusaDataWeb.PlayerLive do
                   </div>
                 </div>
               </div>
-              <.btn
-                variant="ghost"
-                size="sm"
-                phx-click="refresh"
-                phx-disable-with="Refreshing…"
-                icon="hero-arrow-path"
-              >
-                Refresh
-              </.btn>
+              <div class="flex items-center gap-1">
+                <%= if @watched do %>
+                  <.btn variant="ghost" size="sm" icon="hero-bell-slash" phx-click="unwatch">
+                    Watching
+                  </.btn>
+                <% else %>
+                  <.btn variant="ghost" size="sm" icon="hero-bell" phx-click="watch">
+                    Watch
+                  </.btn>
+                <% end %>
+                <.btn
+                  variant="ghost"
+                  size="sm"
+                  phx-click="refresh"
+                  phx-disable-with="Refreshing…"
+                  icon="hero-arrow-path"
+                >
+                  Refresh
+                </.btn>
+              </div>
             </div>
 
             <div class="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -173,13 +283,74 @@ defmodule KusaDataWeb.PlayerLive do
                   >
                     <span class="min-w-0 truncate text-[15px] font-medium text-stone-200">
                       {opponent["name"]}
+                      <%= if opponent["unresolved"] do %>
+                        <span class="ml-1.5 text-xs text-stone-600">(unresolved)</span>
+                      <% end %>
                     </span>
-                    <span class="shrink-0 font-mono text-[13px]">
+                    <span class="flex shrink-0 items-center gap-2 font-mono text-[13px]">
                       <span class="font-bold text-emerald-400">{opponent["wins"]}W</span>
-                      <span class="mx-1.5 text-stone-600">-</span>
+                      <span class="text-stone-600">-</span>
                       <span class="font-bold text-rose-400">{opponent["losses"]}L</span>
+                      <%= if opponent["opponent_player_id"] do %>
+                        <.link
+                          navigate={"/player/#{@stats["player_id"]}/h2h?vs=#{opponent["opponent_player_id"]}" <> h2h_query(@game)}
+                          class="ml-1 rounded-none border border-stone-700/70 px-1.5 py-0.5 text-[11px] uppercase tracking-wide text-stone-400 transition-colors hover:text-stone-100"
+                        >
+                          vs
+                        </.link>
+                      <% end %>
                     </span>
                   </div>
+                </div>
+              </.card>
+
+              <.card class="p-5 lg:col-span-2">
+                <div class="flex items-center gap-2">
+                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                    Character matchups
+                  </h2>
+                  <span class="text-sm text-stone-500">(wins / games)</span>
+                </div>
+                <div id="matchup-grid" class="mt-5 overflow-x-auto">
+                  <%= if @stats["matchup_grid"]["rows"] == [] do %>
+                    <div class="text-sm text-stone-500">No matchup data yet.</div>
+                  <% else %>
+                    <table class="w-full border-collapse text-sm">
+                      <thead>
+                        <tr>
+                          <th class="border-b border-stone-800 px-3 py-2 text-left text-xs font-medium uppercase tracking-[0.14em] text-stone-500">
+                            You
+                          </th>
+                          <th
+                            :for={column <- @stats["matchup_grid"]["columns"]}
+                            class="border-b border-stone-800 px-3 py-2 text-right font-mono text-xs text-stone-400"
+                          >
+                            vs {column}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr :for={row <- @stats["matchup_grid"]["rows"]}>
+                          <td class="border-b border-stone-800/60 px-3 py-2 font-medium text-stone-300">
+                            {row["character"]}
+                          </td>
+                          <td
+                            :for={cell <- row["cells"]}
+                            class={[
+                              "border-b border-stone-800/60 px-3 py-2 text-right font-mono",
+                              cell_class(cell)
+                            ]}
+                          >
+                            <%= if cell["games"] > 0 do %>
+                              {cell["wins"]}/{cell["games"]}
+                            <% else %>
+                              —
+                            <% end %>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  <% end %>
                 </div>
               </.card>
 
@@ -221,6 +392,33 @@ defmodule KusaDataWeb.PlayerLive do
       </div>
     </Layouts.app>
     """
+  end
+
+  defp back_path(nil), do: ~p"/"
+  defp back_path(game), do: ~p"/game/#{game}"
+
+  defp game_query(nil), do: ""
+  defp game_query(game), do: "?game=#{game}"
+
+  defp h2h_query(nil), do: ""
+  defp h2h_query(game), do: "&game=#{game}"
+
+  defp compare_query(nil), do: ""
+  defp compare_query(game), do: "&game=#{game}"
+
+  defp cell_class(cell) do
+    if cell["games"] > 0 and cell["wins"] * 2 >= cell["games"] do
+      "text-emerald-400"
+    else
+      "text-stone-500"
+    end
+  end
+
+  defp game_label(slug) do
+    case Games.by_slug(slug) do
+      %{short_name: name} -> name
+      nil -> slug
+    end
   end
 
   defp set_history_label(stats) do

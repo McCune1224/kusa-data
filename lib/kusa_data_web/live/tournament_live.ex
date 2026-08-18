@@ -1,7 +1,10 @@
 defmodule KusaDataWeb.TournamentLive do
   use KusaDataWeb, :live_view
 
+  alias KusaData.Games
   alias KusaData.Tournaments
+
+  @default_game "melee"
 
   @impl true
   def mount(_params, _session, socket) do
@@ -12,16 +15,34 @@ defmodule KusaDataWeb.TournamentLive do
        error: nil,
        loading: true,
        slug: nil,
+       game: @default_game,
+       games: [],
+       event_count: 0,
+       bookmarked: false,
+       watched: false,
        nav: :tournaments
      )
-     |> stream_configure(:events, dom_id: fn e -> "event-#{e["id"]}" end)}
+     |> stream_configure(:events, dom_id: fn e -> "event-#{e["id"]}" end)
+     |> stream(:events, [])}
   end
 
   @impl true
-  def handle_params(%{"slug" => slug}, _uri, socket) do
+  def handle_params(%{"slug" => slug} = params, _uri, socket) do
     slug = slug |> String.trim() |> bare_slug()
+    game = selected_game(params["game"])
 
-    socket = assign(socket, tournament: nil, error: nil, loading: true, slug: slug)
+    socket =
+      assign(socket,
+        tournament: nil,
+        error: nil,
+        loading: true,
+        slug: slug,
+        game: game,
+        bookmarked: bookmark_status(socket.assigns.current_user, slug),
+        watched: watch_status(socket.assigns.current_user, slug),
+        nav: :tournaments
+      )
+
     socket = spawn_load(socket, slug)
     {:noreply, socket}
   end
@@ -30,21 +51,133 @@ defmodule KusaDataWeb.TournamentLive do
   def handle_info({:load_result, ref, result}, %{assigns: %{load_ref: ref}} = socket) do
     case result do
       {:ok, tournament, _status} ->
-        {:noreply,
-         socket
-         |> assign(tournament: tournament, error: nil, loading: false, load_ref: nil)
-         |> stream(:events, tournament["events"] || [], reset: true)}
+        events = decorate_events(tournament["events"] || [])
+        games = available_games(events)
+        visible = visible_events(events, socket.assigns.game)
+
+        socket =
+          socket
+          |> assign(
+            tournament: Map.put(tournament, "events", events),
+            error: nil,
+            loading: false,
+            load_ref: nil,
+            games: games,
+            event_count: length(visible)
+          )
+
+        {:noreply, stream(socket, :events, visible, reset: true)}
 
       {:error, reason} ->
         {:noreply,
          socket
-         |> assign(tournament: nil, error: reason, loading: false, load_ref: nil)
+         |> assign(tournament: nil, error: reason, loading: false, load_ref: nil, games: [])
          |> stream(:events, [], reset: true)}
     end
   end
 
   def handle_info({:load_result, _ref, _result}, socket) do
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("bookmark", _params, socket) do
+    user = socket.assigns.current_user
+
+    if user do
+      slug = "tournament/#{socket.assigns.slug}"
+      snapshot = bookmark_snapshot(socket.assigns.tournament)
+      {:ok, _} = KusaData.Bookmarks.bookmark(user, slug, snapshot)
+
+      {:noreply,
+       assign(socket, bookmarked: true) |> put_flash(:info, "Saved to your tournaments.")}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, "Log in to save tournaments.")
+       |> push_navigate(
+         to:
+           "/auth?mode=login&return_to=#{URI.encode_www_form("/tournament/#{socket.assigns.slug}")}"
+       )}
+    end
+  end
+
+  @impl true
+  def handle_event("unbookmark", _params, socket) do
+    if socket.assigns.current_user do
+      KusaData.Bookmarks.unbookmark(
+        socket.assigns.current_user,
+        "tournament/#{socket.assigns.slug}"
+      )
+
+      {:noreply,
+       assign(socket, bookmarked: false) |> put_flash(:info, "Removed from your tournaments.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("watch", _params, socket) do
+    if socket.assigns.current_user do
+      {:ok, _} =
+        KusaData.Watches.watch(socket.assigns.current_user, "tournament", socket.assigns.slug)
+
+      {:noreply, assign(socket, watched: true) |> put_flash(:info, "Tournament watch enabled.")}
+    else
+      {:noreply,
+       push_navigate(
+         socket,
+         to:
+           "/auth?mode=login&return_to=#{URI.encode_www_form("/tournament/#{socket.assigns.slug}")}"
+       )}
+    end
+  end
+
+  @impl true
+  def handle_event("unwatch", _params, socket) do
+    if socket.assigns.current_user do
+      :ok =
+        KusaData.Watches.unwatch(socket.assigns.current_user, "tournament", socket.assigns.slug)
+
+      {:noreply, assign(socket, watched: false) |> put_flash(:info, "Tournament watch removed.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp watch_status(nil, _slug), do: false
+
+  defp watch_status(user, slug) do
+    if KusaData.Accounts.repo_configured?(),
+      do: KusaData.Watches.watched?(user, "tournament", slug),
+      else: false
+  end
+
+  defp bookmark_status(nil, _slug), do: false
+
+  defp bookmark_status(user, slug) do
+    if KusaData.Accounts.repo_configured?() do
+      KusaData.Bookmarks.bookmarked?(user, "tournament/#{slug}")
+    else
+      false
+    end
+  end
+
+  defp bookmark_snapshot(nil), do: %{}
+
+  defp bookmark_snapshot(tournament) do
+    Map.take(tournament, [
+      "name",
+      "slug",
+      "city",
+      "addrState",
+      "countryCode",
+      "startAt",
+      "endAt",
+      "venueName",
+      "timezone"
+    ])
   end
 
   defp spawn_load(socket, slug) do
@@ -58,10 +191,46 @@ defmodule KusaDataWeb.TournamentLive do
     assign(socket, load_ref: ref)
   end
 
+  # Normalizes each event's game identity (registering new games from the
+  # payload) so templates never re-derive it.
+  defp decorate_events(events) do
+    Enum.map(events, fn event ->
+      slug =
+        case Games.normalize(event["videogame"]) do
+          %{slug: slug} -> slug
+          _ -> nil
+        end
+
+      Map.put(event, "game_slug", slug)
+    end)
+  end
+
+  defp available_games(events) do
+    events
+    |> Enum.map(& &1["game_slug"])
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+    |> Enum.sort()
+  end
+
+  defp visible_events(events, "all"), do: events
+  defp visible_events(events, game), do: Enum.filter(events, &(&1["game_slug"] == game))
+
+  defp selected_game("all"), do: "all"
+
+  defp selected_game(slug) when is_binary(slug) do
+    case Games.by_slug(slug) do
+      %{slug: _} -> slug
+      nil -> @default_game
+    end
+  end
+
+  defp selected_game(_), do: @default_game
+
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} nav={@nav}>
+    <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
       <div>
         <%= cond do %>
           <% @loading -> %>
@@ -130,15 +299,61 @@ defmodule KusaDataWeb.TournamentLive do
                   {format_entrants(@tournament)}
                 </p>
               <% end %>
+
+              <div class="mt-5 flex flex-wrap gap-2">
+                <%= if @bookmarked do %>
+                  <.btn variant="ghost" size="sm" phx-click="unbookmark" icon="hero-bookmark-slash">
+                    Saved
+                  </.btn>
+                <% else %>
+                  <.btn variant="secondary" size="sm" phx-click="bookmark" icon="hero-bookmark">
+                    Save tournament
+                  </.btn>
+                <% end %>
+                <%= if @watched do %>
+                  <.btn variant="ghost" size="sm" phx-click="unwatch" icon="hero-bell-slash">
+                    Watching
+                  </.btn>
+                <% else %>
+                  <.btn variant="ghost" size="sm" phx-click="watch" icon="hero-bell">
+                    Watch changes
+                  </.btn>
+                <% end %>
+              </div>
+              <a
+                href={"/tournament/#{@slug}/calendar.ics"}
+                class="inline-flex items-center gap-2 rounded-none border border-stone-700/70 px-3 py-2 text-xs font-semibold text-stone-400 transition-colors hover:border-stone-500 hover:text-stone-100"
+              >
+                <.icon name="hero-calendar-days" class="size-4" /> Add to calendar
+              </a>
             </section>
 
             <section class="mt-10">
               <div class="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 class="text-lg font-semibold tracking-tight text-stone-100">Melee events</h2>
+                <h2 class="text-lg font-semibold tracking-tight text-stone-100">Events</h2>
                 <span class="font-mono text-[13px] text-stone-400">
-                  {length(@tournament["events"] || [])}
+                  {@event_count}
                 </span>
               </div>
+
+              <%= if length(@games) > 0 do %>
+                <div class="mt-4 flex flex-wrap items-center gap-1">
+                  <.link
+                    patch={game_path(@slug, "all")}
+                    class={game_tab_class(@game == "all")}
+                  >
+                    All games
+                  </.link>
+                  <%= for game_slug <- @games do %>
+                    <.link
+                      patch={game_path(@slug, game_slug)}
+                      class={game_tab_class(@game == game_slug)}
+                    >
+                      {game_label(game_slug)}
+                    </.link>
+                  <% end %>
+                </div>
+              <% end %>
 
               <div
                 id="events"
@@ -149,7 +364,7 @@ defmodule KusaDataWeb.TournamentLive do
                   id="events-empty"
                   class="hidden px-6 py-10 text-center text-[15px] text-stone-400 only:block"
                 >
-                  No Melee events on this tournament page.
+                  No events for this game on this tournament page.
                 </div>
 
                 <div
@@ -161,20 +376,23 @@ defmodule KusaDataWeb.TournamentLive do
                     <div class="truncate text-[15px] font-medium text-stone-200">{ev["name"]}</div>
                     <div class="mt-1 text-sm text-stone-400">
                       {ev["numEntrants"] || 0} entrants · {state_label(ev["state"])}
+                      <%= if ev["game_slug"] do %>
+                        · {game_label(ev["game_slug"])}
+                      <% end %>
                     </div>
                   </div>
                   <div class="flex shrink-0 gap-1">
                     <.btn
                       variant="ghost"
                       size="sm"
-                      navigate={~p"/event/#{ev["id"]}?tab=seeds"}
+                      navigate={event_path(ev, "seeds")}
                     >
                       Seeding
                     </.btn>
                     <.btn
                       variant="ghost"
                       size="sm"
-                      navigate={~p"/event/#{ev["id"]}?tab=results"}
+                      navigate={event_path(ev, "results")}
                     >
                       Results
                     </.btn>
@@ -207,6 +425,36 @@ defmodule KusaDataWeb.TournamentLive do
       </div>
     </Layouts.app>
     """
+  end
+
+  defp game_path(slug, "all"), do: "/tournament/#{slug}?game=all"
+  defp game_path(slug, game), do: "/tournament/#{slug}?game=#{game}"
+
+  defp event_path(event, tab) do
+    game = event["game_slug"]
+
+    if game do
+      ~p"/event/#{event["id"]}?tab=#{tab}&game=#{game}"
+    else
+      ~p"/event/#{event["id"]}?tab=#{tab}"
+    end
+  end
+
+  defp game_tab_class(active?) do
+    base = "px-3.5 py-1.5 text-sm font-medium transition-colors rounded-none"
+
+    if active? do
+      "#{base} bg-lime-400 text-stone-950"
+    else
+      "#{base} text-stone-400 hover:bg-stone-800/60 hover:text-stone-100"
+    end
+  end
+
+  defp game_label(slug) do
+    case Games.by_slug(slug) do
+      %{short_name: name} -> name
+      nil -> slug
+    end
   end
 
   defp location_label(tournament) do

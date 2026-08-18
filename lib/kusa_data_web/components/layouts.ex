@@ -27,6 +27,7 @@ defmodule KusaDataWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :nav, :atom, default: nil, doc: "which nav item is active: :tournaments | :players"
+  attr :current_user, :any, default: nil, doc: "the signed-in user, or nil"
 
   slot :inner_block, required: true
 
@@ -40,13 +41,53 @@ defmodule KusaDataWeb.Layouts do
             <span class="text-[15px] font-black uppercase tracking-[0.16em]">Kusa<span class="text-lime-400">Data</span></span>
           </a>
 
-          <nav class="hidden items-center gap-8 md:flex">
+          <nav class="hidden items-center gap-6 md:flex">
             <.nav_link to={~p"/"} active={@nav == :tournaments}>Tournaments</.nav_link>
+            <.nav_link to={~p"/rankings"} active={@nav == :rankings}>Rankings</.nav_link>
+            <%= if @current_user do %>
+              <.nav_link to={~p"/your-tournaments"} active={@nav == :your}>Saved</.nav_link>
+              <.nav_link to={~p"/leagues"} active={@nav == :leagues}>Leagues</.nav_link>
+            <% end %>
           </nav>
 
-          <div class="hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500 sm:flex">
-            <span class="size-1.5 bg-lime-400"></span>
-            <span>Index online</span>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              id="theme-toggle"
+              data-theme-toggle
+              class="rounded-none border border-stone-700/70 px-2.5 py-1.5 text-stone-400 transition-colors hover:text-stone-100"
+              aria-label="Toggle light theme"
+            >
+              <.icon name="hero-sun" class="size-4" />
+            </button>
+            <%= if @current_user do %>
+              <span class="hidden max-w-40 truncate text-xs text-stone-500 sm:block">
+                {@current_user.email}
+              </span>
+              <.link
+                navigate={~p"/settings"}
+                class="hidden rounded-none border border-stone-700/70 px-2.5 py-1 font-mono text-xs text-stone-400 transition-colors hover:text-stone-100 sm:block"
+              >
+                Settings
+              </.link>
+              <form action={~p"/log-out"} method="post" id="logout-form">
+                <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+                <input type="hidden" name="_method" value="delete" />
+                <button
+                  type="submit"
+                  class="rounded-none border border-stone-700/70 px-2.5 py-1 font-mono text-xs text-stone-400 transition-colors hover:border-rose-500/60 hover:text-rose-300"
+                >
+                  Log out
+                </button>
+              </form>
+            <% else %>
+              <.link
+                navigate={~p"/auth?mode=login"}
+                class="rounded-none border border-lime-400/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-lime-300 transition-colors hover:bg-lime-400 hover:text-stone-950"
+              >
+                Log in
+              </.link>
+            <% end %>
           </div>
 
           <button
@@ -63,6 +104,11 @@ defmodule KusaDataWeb.Layouts do
         <div id="mobile-nav" hidden class="border-t border-stone-800/70 md:hidden">
           <nav class="mx-auto flex max-w-6xl flex-col px-4 py-2 sm:px-6">
             <.nav_link to={~p"/"} active={@nav == :tournaments} mobile>Tournaments</.nav_link>
+            <.nav_link to={~p"/rankings"} active={@nav == :rankings} mobile>Rankings</.nav_link>
+            <%= if @current_user do %>
+              <.nav_link to={~p"/your-tournaments"} active={@nav == :your} mobile>Saved</.nav_link>
+              <.nav_link to={~p"/leagues"} active={@nav == :leagues} mobile>Leagues</.nav_link>
+            <% end %>
           </nav>
         </div>
       </header>
