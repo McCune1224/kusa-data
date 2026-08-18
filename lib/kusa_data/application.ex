@@ -15,7 +15,7 @@ defmodule KusaData.Application do
       KusaDataWeb.Endpoint
     ]
 
-    children = core_children ++ redis_child()
+    children = core_children ++ repo_child() ++ redis_child() ++ poller_child()
 
     opts = [strategy: :one_for_one, name: KusaData.Supervisor]
     Supervisor.start_link(children, opts)
@@ -29,10 +29,30 @@ defmodule KusaData.Application do
     :ok
   end
 
+  defp repo_child do
+    # The repo starts whenever a database URL is configured; otherwise
+    # stateful features fail closed and public routes still boot.
+    if repo_configured?() do
+      [KusaData.Repo]
+    else
+      []
+    end
+  end
+
+  defp repo_configured? do
+    repo_config = Application.get_env(:kusa_data, KusaData.Repo, [])
+
+    Keyword.has_key?(repo_config, :url) or Keyword.has_key?(repo_config, :database)
+  end
+
   defp redis_child do
     case Application.get_env(:kusa_data, KusaData.Cache, []) |> Keyword.get(:url) do
       nil -> []
       url -> [KusaData.Redis.child_spec(url)]
     end
+  end
+
+  defp poller_child do
+    if repo_configured?(), do: [KusaData.Watches.Poller], else: []
   end
 end

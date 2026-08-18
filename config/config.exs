@@ -8,6 +8,7 @@
 import Config
 
 config :kusa_data,
+  ecto_repos: [KusaData.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint
@@ -29,6 +30,29 @@ config :phoenix_live_view,
 # Redis cache connection, set at runtime from REDIS_URL in config/runtime.exs.
 # When absent the app runs without caching.
 config :kusa_data, KusaData.Cache, url: nil
+
+# PostgreSQL for first-party state. Runtime DATABASE_URL overrides these
+# defaults. In development and production, leave DATABASE_URL and
+# DATABASE_NAME unset to keep the Repo and stateful features disabled.
+if System.get_env("DATABASE_URL") || System.get_env("DATABASE_NAME") do
+  config :kusa_data, KusaData.Repo,
+    username: System.get_env("DATABASE_USER", "postgres"),
+    password: System.get_env("DATABASE_PASSWORD", "postgres"),
+    hostname: System.get_env("DATABASE_HOST", "localhost"),
+    database: System.get_env("DATABASE_NAME", "kusa_data_dev"),
+    pool_size: 10,
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true
+end
+
+config :kusa_data, :notification_email,
+  smtp_host: nil,
+  smtp_username: nil,
+  smtp_password: nil,
+  smtp_port: 587,
+  from: {"KusaData", "notifications@example.invalid"}
+
+config :swoosh, :api_client, Swoosh.ApiClient.Finch
 
 # Configure esbuild (the version is required)
 config :esbuild,

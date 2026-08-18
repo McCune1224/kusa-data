@@ -27,6 +27,20 @@ config :kusa_data, KusaData.Cache, url: System.get_env("REDIS_URL")
 # start.gg API bearer token.
 config :kusa_data, KusaData.GraphQL.Client, token: System.get_env("ACCESS_TOKEN")
 
+# PostgreSQL connection. DATABASE_URL (e.g.
+# postgres://user:pass@host:5432/kusa_data_dev) wins over the component env
+# vars. When neither exists the app boots with public routes only and
+# stateful features fail closed.
+case System.get_env("DATABASE_URL") do
+  nil ->
+    :ok
+
+  url ->
+    config :kusa_data, KusaData.Repo,
+      url: url,
+      pool_size: String.to_integer(System.get_env("DATABASE_POOL_SIZE", "10"))
+end
+
 config :kusa_data, KusaDataWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 

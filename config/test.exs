@@ -18,6 +18,15 @@ config :kusa_data, KusaData.GraphQL.RateLimiter, limit: 100_000
 # In-memory Redis fake.
 config :kusa_data, KusaData.Cache, command: {KusaData.Test.FakeRedis, :command}
 
+# Test database (created by the Dockerized Postgres the suite runs against).
+config :kusa_data, KusaData.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "kusa_data_test",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 12
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
