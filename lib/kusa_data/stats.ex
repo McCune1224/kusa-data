@@ -4,7 +4,12 @@ defmodule KusaData.Stats do
 
   Fetches the player's recent set history (capped at `@max_pages` pages so a
   top player's 1,500+ sets don't wreck the response budget), computes stats
-  with `KusaData.Stats.Engine`, and caches the result per player.
+  with `KusaData.Stats.Engine`, and caches the result per player and game.
+
+  `for_player/2` accepts an optional game slug: when given, only sets whose
+  event belongs to that game are analyzed, so a Melee page never mixes sets
+  from another game. Cache keys include the game so scoped and unscoped
+  results stay separate.
   """
 
   @sets_per_page 50
@@ -17,25 +22,55 @@ defmodule KusaData.Stats do
   alias KusaData.Players
   alias KusaData.Stats.Engine
 
-  @spec for_player(integer()) :: {:ok, map(), :hit | :miss | :bypass} | {:error, term()}
-  def for_player(player_id) do
-    Cache.fetch("player:#{player_id}:stats", @cache_ttl, fn -> compute(player_id) end)
+  @spec for_player(integer(), String.t() | nil) ::
+          {:ok, map(), :hit | :miss | :bypass} | {:error, term()}
+  def for_player(player_id, game \\ nil) do
+    Cache.fetch(stats_key(player_id, game), @cache_ttl, fn -> compute(player_id, game) end)
   end
 
   @doc "Drops the cached stats so the next fetch is fresh."
-  @spec clear_cache(integer()) :: :ok
-  def clear_cache(player_id) do
-    Cache.delete("player:#{player_id}:stats")
+  @spec clear_cache(integer(), String.t() | nil) :: :ok
+  def clear_cache(player_id, game \\ nil) do
+    Cache.delete(stats_key(player_id, game))
     :ok
   end
 
-  defp compute(player_id) do
+  @doc """
+  Raw (bounded) set history for a player, optionally scoped to one game.
+
+  Cached separately from the computed stats so rankings and analytics can
+  reuse the same fetch without recomputing aggregates.
+  """
+  @spec raw_sets(integer(), String.t() | nil) ::
+          {:ok, [map()], :hit | :miss | :bypass} | {:error, term()}
+  def raw_sets(player_id, game \\ nil) do
+    Cache.fetch("player:#{player_id}:raw_sets:#{game || "all"}", @cache_ttl, fn ->
+      with {:ok, sets} <- fetch_sets(player_id) do
+        sets = if game, do: Enum.filter(sets, &game_matches?(&1, game)), else: sets
+        {:ok, sets}
+      end
+    end)
+  end
+
+  defp stats_key(player_id, nil), do: "player:#{player_id}:stats"
+  defp stats_key(player_id, game), do: "player:#{player_id}:stats:#{game}"
+
+  defp compute(player_id, game) do
     with {:ok, identity} <- fetch_identity(player_id) do
       with {:ok, sets} <- fetch_sets(player_id) do
+        sets = if game, do: Enum.filter(sets, &game_matches?(&1, game)), else: sets
         {:ok, Engine.build(identity, sets)}
       end
     end
   end
+
+  # A set belongs to the selected game when its event reports that videogame
+  # slug. Missing game identity means the set cannot be attributed, so it is
+  # excluded from scoped views rather than guessed.
+  defp game_matches?(%{"event" => %{"videogame" => %{"slug" => slug}}}, game),
+    do: slug == game
+
+  defp game_matches?(_set, _game), do: false
 
   defp fetch_identity(player_id) do
     case Players.profile(player_id) do

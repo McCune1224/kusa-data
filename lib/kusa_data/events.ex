@@ -13,6 +13,7 @@ defmodule KusaData.Events do
   alias KusaData.Cache
   alias KusaData.GraphQL.Client
   alias KusaData.GraphQL.Queries
+  alias KusaData.Stats.BracketEngine
 
   @type page_collection :: %{
           nodes: list(map()),
@@ -80,12 +81,81 @@ defmodule KusaData.Events do
     end)
   end
 
-  @doc "Drops cached seeds/results so the next fetch is fresh."
+  @doc "All recorded sets for an event (winners, scores, rounds, completed time)."
+  @spec sets(integer()) :: {:ok, [map()], :hit | :miss | :bypass} | {:error, term()}
+  def sets(event_id) do
+    Cache.fetch("sets:#{event_id}", 5 * 60, fn ->
+      with {:ok, pages} <- fetch_all(event_id, :sets) do
+        all_sets =
+          pages
+          |> Enum.flat_map(fn page -> page["nodes"] end)
+          |> Enum.map(fn set ->
+            %{
+              "id" => set["id"],
+              "state" => set["state"],
+              "winner_id" => set["winnerId"],
+              "display_score" => set["displayScore"],
+              "round" => set["fullRoundText"],
+              "completed_at" => set["completedAt"],
+              "slots" =>
+                (set["slots"] || [])
+                |> Enum.map(fn slot ->
+                  %{"entrant_id" => slot["entrant"]["id"], "name" => slot["entrant"]["name"]}
+                end)
+            }
+          end)
+          |> Enum.sort_by(& &1["id"])
+
+        {:ok, all_sets}
+      end
+    end)
+  end
+
+  @doc """
+  Full bracket analytics for an event: seeds + results + sets joined by the
+  `BracketEngine`. Cached with the same TTL and invalidation as the raw
+  collections, so the UI and the export API share one computation.
+  """
+  @spec analytics(integer()) :: {:ok, map(), :hit | :miss | :bypass} | {:error, term()}
+  def analytics(event_id) do
+    Cache.fetch("analytics:#{event_id}", 5 * 60, fn ->
+      with {:ok, seeds, _} <- seeding(event_id),
+           {:ok, standings, _} <- results(event_id),
+           {:ok, event_sets, _} <- sets(event_id),
+           {:ok, event, _} <- get(event_id) do
+        {:ok,
+         %{
+           "event" => event,
+           "seeds" => seeds,
+           "results" => standings,
+           "sets" => event_sets,
+           "analysis" => BracketEngine.analyze(seeds, standings, event_sets, context(event))
+         }}
+      end
+    end)
+  end
+
+  @doc "Drops cached seeds/results/sets/analytics so the next fetch is fresh."
   @spec clear_cache(integer()) :: :ok
   def clear_cache(event_id) do
     Cache.delete("seeds:#{event_id}")
     Cache.delete("results:#{event_id}")
+    Cache.delete("sets:#{event_id}")
+    Cache.delete("analytics:#{event_id}")
     :ok
+  end
+
+  defp context(event) do
+    tournament = event["tournament"] || %{}
+
+    %{
+      "event_id" => event["id"],
+      "event_name" => event["name"],
+      "event_slug" => event["slug"],
+      "tournament_slug" => tournament["slug"],
+      "tournament_name" => tournament["name"],
+      "start_at" => event["startAt"] || tournament["startAt"]
+    }
   end
 
   defp fetch_all(event_id, collection) do
@@ -142,8 +212,11 @@ defmodule KusaData.Events do
   defp page_query(event_id, :standings, page),
     do: Queries.event_results(event_id, page, @per_page)
 
+  defp page_query(event_id, :sets, page), do: Queries.event_sets(event_id, page, @per_page)
+
   defp parse(data, :entrants), do: data["event"]["entrants"]
   defp parse(data, :standings), do: data["event"]["standings"]
+  defp parse(data, :sets), do: data["event"]["sets"]
 
   defp page_info(data, collection) do
     parse(data, collection)["pageInfo"]

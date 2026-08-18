@@ -5,12 +5,18 @@ defmodule KusaData.GraphQL.Queries do
   Every document is name-stamped with a unique operation name
   (`NearbyTournaments`, `PlayerSets`, ...) so tests can route fake transport
   responses without parsing the full document.
+
+  Tournament filters take an explicit game selection as a list of start.gg
+  `videogameIds` (or `nil` for "all games"), and event payloads carry each
+  event's `videogame` identity so callers can normalize and group by game
+  without hard-coding numeric ids.
   """
 
-  @spec tournament_search(map(), pos_integer(), pos_integer()) :: {String.t(), map()}
-  def tournament_search(filter, page, per_page) do
+  @spec tournament_search(map(), pos_integer(), pos_integer(), [integer()] | nil) ::
+          {String.t(), map()}
+  def tournament_search(filter, page, per_page, videogame_ids \\ [1]) do
     {"""
-     query TournamentSearch($filter: TournamentPageFilter!, $page: Int!, $perPage: Int!) {
+     query TournamentSearch($filter: TournamentPageFilter!, $page: Int!, $perPage: Int!, $videogameIds: [ID]) {
        tournaments(query: { page: $page, perPage: $perPage, filter: $filter }) {
          nodes {
            id
@@ -22,14 +28,21 @@ defmodule KusaData.GraphQL.Queries do
            startAt
            endAt
            venueName
+           venueAddress
            isRegistrationOpen
            numAttendees
            timezone
            lat
            lng
-           events(filter: { videogameId: [1] }) {
+           events(filter: { videogameId: $videogameIds }) {
              id
              numEntrants
+             state
+             videogame {
+               id
+               name
+               slug
+             }
            }
          }
          pageInfo {
@@ -38,32 +51,93 @@ defmodule KusaData.GraphQL.Queries do
          }
        }
      }
-     """, %{filter: filter, page: page, perPage: per_page}}
+     """,
+     %{
+       filter: filter,
+       page: page,
+       perPage: per_page,
+       videogameIds: videogame_ids
+     }}
   end
 
-  @spec nearby_filter(String.t(), String.t()) :: map()
-  def nearby_filter(coordinates, distance) do
-    %{
-      upcoming: true,
-      videogameIds: [1],
-      location: %{distanceFrom: coordinates, distance: distance}
-    }
+  @spec nearby_filter(String.t(), String.t(), [integer()] | nil) :: map()
+  def nearby_filter(coordinates, distance, videogame_ids \\ [1]) do
+    %{upcoming: true, location: %{distanceFrom: coordinates, distance: distance}}
+    |> put_games(videogame_ids)
   end
 
-  @spec upcoming_filter() :: map()
-  def upcoming_filter do
-    %{upcoming: true, videogameIds: [1]}
+  @spec upcoming_filter([integer()] | nil) :: map()
+  def upcoming_filter(videogame_ids \\ [1]) do
+    %{upcoming: true}
+    |> put_games(videogame_ids)
   end
 
-  @spec recent_filter(integer()) :: map()
-  def recent_filter(after_date) do
-    %{past: true, videogameIds: [1], afterDate: after_date}
+  @spec recent_filter(integer(), [integer()] | nil) :: map()
+  def recent_filter(after_date, videogame_ids \\ [1]) do
+    %{past: true, afterDate: after_date}
+    |> put_games(videogame_ids)
   end
 
-  @spec tournament_detail(String.t()) :: {String.t(), map()}
-  def tournament_detail(slug) do
+  @doc "Filter for a date-bounded past-tournament browse (ISO dates become unix bounds)."
+  @spec past_filter(map()) :: map()
+  def past_filter(%{from: from, to: to} = query) do
+    %{past: true}
+    |> maybe_put(:afterDate, iso_to_unix(from))
+    |> maybe_put(:beforeDate, iso_to_unix(to))
+    |> maybe_put(:countryCode, query[:country])
+    |> maybe_put(:state, query[:state])
+    |> maybe_put_search(query[:q])
+    |> put_games(videogame_ids_for(query))
+  end
+
+  defp maybe_put_search(filter, q) when is_binary(q) do
+    case String.trim(q) do
+      "" -> filter
+      trimmed -> Map.put(filter, :search, %{searchString: trimmed})
+    end
+  end
+
+  defp maybe_put_search(filter, _), do: filter
+
+  @doc "Filter for text search over tournament name, city, and venue."
+  @spec search_filter(map()) :: map()
+  def search_filter(%{q: q} = query) when is_binary(q) and q != "" do
+    %{past: true, search: %{searchString: String.trim(q)}}
+    |> put_games(videogame_ids_for(query))
+  end
+
+  @doc "Filter for country/state region browsing (state may be omitted)."
+  @spec region_filter(map()) :: map()
+  def region_filter(%{country: country} = query) when is_binary(country) do
+    %{upcoming: true, countryCode: country}
+    |> maybe_put(:state, query[:state])
+    |> put_games(videogame_ids_for(query))
+  end
+
+  @doc "All start.gg videogames, for deriving game records without hard-coded ids."
+  @spec videogames() :: {String.t(), map()}
+  def videogames do
     {"""
-     query TournamentDetail($slug: String!) {
+     query Videogames {
+       videogames(query: { perPage: 100 }) {
+         nodes {
+           id
+           name
+           slug
+           abbreviation
+         }
+         pageInfo {
+           total
+         }
+       }
+     }
+     """, %{}}
+  end
+
+  @spec tournament_detail(String.t(), [integer()] | nil) :: {String.t(), map()}
+  def tournament_detail(slug, videogame_ids \\ nil) do
+    {"""
+     query TournamentDetail($slug: String!, $videogameIds: [ID]) {
        tournament(slug: $slug) {
          id
          name
@@ -78,16 +152,21 @@ defmodule KusaData.GraphQL.Queries do
          timezone
          isRegistrationOpen
          numAttendees
-         events(filter: { videogameId: [1] }) {
+         events(filter: { videogameId: $videogameIds }) {
            id
            name
            slug
            numEntrants
            state
+           videogame {
+             id
+             name
+             slug
+           }
          }
        }
      }
-     """, %{slug: slug}}
+     """, %{slug: slug, videogameIds: videogame_ids}}
   end
 
   @spec event_detail(integer() | String.t()) :: {String.t(), map()}
@@ -101,6 +180,11 @@ defmodule KusaData.GraphQL.Queries do
          numEntrants
          state
          tournament {
+           id
+           name
+           slug
+         }
+         videogame {
            id
            name
            slug
@@ -161,6 +245,38 @@ defmodule KusaData.GraphQL.Queries do
                      id
                    }
                  }
+               }
+             }
+           }
+           pageInfo {
+             total
+             totalPages
+           }
+         }
+       }
+     }
+     """, %{id: event_id, page: page, perPage: per_page}}
+  end
+
+  @spec event_sets(integer(), pos_integer(), pos_integer()) :: {String.t(), map()}
+  def event_sets(event_id, page, per_page) do
+    {"""
+     query EventSets($id: ID!, $page: Int!, $perPage: Int!) {
+       event(id: $id) {
+         id
+         name
+         sets(page: $page, perPage: $perPage) {
+           nodes {
+             id
+             state
+             winnerId
+             displayScore
+             fullRoundText
+             completedAt
+             slots {
+               entrant {
+                 id
+                 name
                }
              }
            }
@@ -238,6 +354,11 @@ defmodule KusaData.GraphQL.Queries do
              event {
                id
                name
+               videogame {
+                 id
+                 name
+                 slug
+               }
              }
              slots {
                entrant {
@@ -246,6 +367,9 @@ defmodule KusaData.GraphQL.Queries do
                  participants {
                    user {
                      id
+                     player {
+                       id
+                     }
                    }
                  }
                }
@@ -278,14 +402,56 @@ defmodule KusaData.GraphQL.Queries do
      """, %{id: player_id, page: page, perPage: per_page}}
   end
 
+  defp put_games(filter, nil), do: filter
+  defp put_games(filter, videogame_ids), do: Map.put(filter, :videogameIds, videogame_ids)
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, _key, ""), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp videogame_ids_for(query) do
+    case Map.get(query, :videogame_ids, Map.get(query, :games)) do
+      :all -> nil
+      nil -> nil
+      ids when is_list(ids) -> Enum.map(ids, &numeric_id/1)
+      other -> numeric_id(other)
+    end
+  end
+
+  defp numeric_id(id) when is_integer(id), do: id
+
+  defp numeric_id(id) do
+    case Integer.parse(to_string(id)) do
+      {number, ""} -> number
+      _ -> nil
+    end
+  end
+
+  @doc "Converts an `YYYY-MM-DD` ISO date (or unix int) to unix seconds, or nil."
+  def iso_to_unix(nil), do: nil
+
+  def iso_to_unix(value) when is_integer(value), do: value
+
+  def iso_to_unix(iso) when is_binary(iso) do
+    case Date.from_iso8601(iso) do
+      {:ok, date} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC") |> DateTime.to_unix()
+      _ -> nil
+    end
+  end
+
+  def iso_to_unix(_), do: nil
+
+  defp numeric_or_nil(nil), do: nil
   defp numeric_or_nil(identifier) when is_integer(identifier), do: identifier
 
-  defp numeric_or_nil(identifier) do
+  defp numeric_or_nil(identifier) when is_binary(identifier) do
     case Integer.parse(identifier) do
       {number, ""} -> number
       _ -> nil
     end
   end
+
+  defp numeric_or_nil(_), do: nil
 
   defp slug_or_nil(identifier) do
     case numeric_or_nil(identifier) do
