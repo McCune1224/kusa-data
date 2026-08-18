@@ -1,0 +1,10 @@
+{
+  "name": "KusaData",
+  "short_name": "KusaData",
+  "description": "Browse start.gg tournaments, brackets, and player analytics.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0a09",
+  "theme_color": "#a3e635",
+  "icons": []
+}

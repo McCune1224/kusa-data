@@ -26,6 +26,30 @@ import {hooks as colocatedHooks} from "phoenix-colocated/kusa_data"
 import topbar from "../vendor/topbar"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+const themeStorageKey = "kusa-data-theme"
+const root = document.documentElement
+const storedTheme = localStorage.getItem(themeStorageKey)
+if (storedTheme === "light" || storedTheme === "dark") {
+  root.dataset.theme = storedTheme
+  root.classList.toggle("dark", storedTheme === "dark")
+} else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+  root.dataset.theme = "light"
+  root.classList.remove("dark")
+}
+
+document.addEventListener("click", event => {
+  const toggle = event.target.closest("[data-theme-toggle]")
+  if (!toggle) return
+  const next = root.dataset.theme === "light" ? "dark" : "light"
+  root.dataset.theme = next
+  root.classList.toggle("dark", next === "dark")
+  localStorage.setItem(themeStorageKey, next)
+})
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js"))
+}
+
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
