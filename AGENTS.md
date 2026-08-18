@@ -2,14 +2,15 @@ This is a web application written using the Phoenix web framework.
 
 ## Project overview
 
-KusaData is a Melee tournament browsing app powered by the [start.gg GraphQL API](https://developer.start.gg). It's a **read-only API consumer** — there is no database, no Ecto, no migrations. Data comes from start.gg and is cached in Redis.
+- KusaData is a Melee tournament browsing app powered by the [start.gg GraphQL API](https://developer.start.gg). Public tournament/player data remains read-only and is cached in Redis. Optional PostgreSQL/Ecto persistence supports authenticated state such as accounts, bookmarks, watches, player links, and leagues; when no database is configured, the Repo is not supervised and those stateful features fail closed while public routes continue to boot.
 
 ### Architecture
 
 - **LiveView** server-rendered UI (`lib/kusa_data_web/live/`)
 - **GraphQL client** (`lib/kusa_data/graphql/`) — bearer auth, rate limiting, retry on 429, uses `Req`
 - **Redis cache** (`lib/kusa_data/cache.ex`) — graceful degradation when Redis is unavailable; in-memory `FakeRedis` for tests
-- **Context modules** (`lib/kusa_data/`): `Tournaments`, `Events`, `Players`, `Stats`, `Stats.Engine`, `Geocode`, `Links`
+- **Optional PostgreSQL/Ecto Repo** (`lib/kusa_data/repo.ex`, `priv/repo/migrations/`) — starts only with `DATABASE_URL`; durable account, bookmark, watch, player-link, league, and notification state
+- **Context modules** (`lib/kusa_data/`): `Accounts`, `Bookmarks`, `Events`, `Leagues`, `Players`, `Stats`, `Stats.Engine`, `Geocode`, `Links`, `PlayerLinks`, `Tournaments`, `Watches`
 
 ### Key commands
 
@@ -21,8 +22,8 @@ KusaData is a Melee tournament browsing app powered by the [start.gg GraphQL API
 
 ### Environment
 
-- `.env` / `.env.example` — `ACCESS_TOKEN` (start.gg bearer token) and `REDIS_URL` (optional)
-- No database — no `mix ecto` commands exist in this project
+- `.env` / `.env.example` — `ACCESS_TOKEN` (start.gg bearer token), `REDIS_URL` (optional), and `DATABASE_URL` (optional PostgreSQL connection for stateful features)
+- PostgreSQL/Ecto is optional. Set `DATABASE_URL`, then run `mix ecto.create` and `mix ecto.migrate` when provisioning durable state. Without it, the Repo and watch poller are not started and stateful routes fail closed; public read-only routes remain available.
 - Redis is optional; the app runs uncached without it
 
 ### start.gg GraphQL API
@@ -35,8 +36,8 @@ KusaData is a Melee tournament browsing app powered by the [start.gg GraphQL API
 
 ### Testing
 
-- Fully offline — uses `KusaData.Test.FakeTransport` (HTTP) and `KusaData.Test.FakeRedis` (Redis)
-- Test support in `test/support/`: `ConnCase`, `Doubles`, `FakeRedis`, `FakeTransport`, `Fixtures`, `LiveViewHelpers`
+- Tests make no external API calls: GraphQL uses `KusaData.Test.FakeTransport`, cache tests use `KusaData.Test.FakeRedis`, and repository-backed tests use `KusaData.DataCase` with the SQL sandbox
+- Test support in `test/support/`: `ConnCase`, `DataCase`, `Doubles`, `FakeRedis`, `FakeTransport`, `Fixtures`, `LiveViewHelpers`
 - Rate limiter set to 100k in test config so it never throttles
 
 ---
