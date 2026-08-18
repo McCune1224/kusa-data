@@ -104,4 +104,47 @@ defmodule KusaDataWeb.EventLiveTest do
     assert wait_has_element(view, "h3")
     assert element(view, "h3") |> render() =~ "No event with that id or slug was found"
   end
+
+  test "standings tab shows W/L rows, recap, and bracket anomalies", %{conn: conn} do
+    FakeTransport.put(
+      :query,
+      "EventSeeding",
+      Fixtures.seeding_response([
+        Fixtures.entrant(11, "Mango", 4, 501),
+        Fixtures.entrant(12, "Armada", 1, 502)
+      ])
+    )
+
+    FakeTransport.put(
+      :query,
+      "EventResults",
+      Fixtures.results_response([
+        Fixtures.standing(11, "Mango", 1, 501),
+        Fixtures.standing(12, "Armada", 2, 502)
+      ])
+    )
+
+    FakeTransport.put(
+      :query,
+      "EventSets",
+      Fixtures.event_sets_response([
+        Fixtures.event_set(1, 11, [11, 12]),
+        Fixtures.event_set(2, 12, [11, 12])
+      ])
+    )
+
+    {:ok, view, _html} = live(conn, "/event/100?tab=standings")
+
+    assert wait_has_element(view, "#row-11")
+    assert wait_has_element(view, "#row-12")
+    assert has_element?(view, "#tab-standings")
+    assert render(view) =~ "Tournament recap"
+    assert render(view) =~ "Bracket anomalies"
+    # Seed 4 won → reseed anomaly on Mango's row.
+    assert element(view, "#row-11") |> render() =~ "reseeded"
+    assert render(view) =~ "1W"
+    # Recap panel labels are present.
+    assert render(view) =~ "Entrants"
+    assert render(view) =~ "Matches"
+  end
 end

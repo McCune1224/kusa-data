@@ -21,18 +21,44 @@ defmodule KusaData.Test.Fixtures do
         "timezone" => "America/Chicago",
         "lat" => 39.7817,
         "lng" => -89.6501,
-        "events" => [%{"id" => 100_000 + id, "numEntrants" => 32}]
+        "events" => [
+          %{
+            "id" => 100_000 + id,
+            "numEntrants" => 32,
+            "state" => 3,
+            "videogame" => %{"id" => 1, "name" => "Super Smash Bros. Melee", "slug" => "melee"}
+          }
+        ]
       },
       overrides
     )
   end
 
-  def tournament_search_response(nodes, total) do
+  def tournament_search_response(nodes, total, opts \\ []) do
+    total_pages = Keyword.get(opts, :total_pages, max(1, div(total + 23, 24)))
+
     %{
       "data" => %{
         "tournaments" => %{
           "nodes" => nodes,
-          "pageInfo" => %{"total" => total, "totalPages" => max(1, div(total + 23, 24))}
+          "pageInfo" => %{"total" => total, "totalPages" => total_pages}
+        }
+      }
+    }
+  end
+
+  @doc "A start.gg videogame payload for event game identity."
+  def videogame(id, slug, name, abbreviation \\ nil) do
+    %{"id" => id, "name" => name, "slug" => slug, "abbreviation" => abbreviation}
+  end
+
+  @doc "Response for the `Videogames` list query."
+  def games_response(games) do
+    %{
+      "data" => %{
+        "videogames" => %{
+          "nodes" => games,
+          "pageInfo" => %{"total" => length(games)}
         }
       }
     }
@@ -50,6 +76,7 @@ defmodule KusaData.Test.Fixtures do
         "slug" => "tournament/test-melee-weekly/event/melee-singles",
         "numEntrants" => 32,
         "state" => "ACTIVE",
+        "videogame" => %{"id" => 1, "name" => "Super Smash Bros. Melee", "slug" => "melee"},
         "tournament" => %{
           "id" => 1,
           "name" => "Test Melee Weekly",
@@ -128,12 +155,14 @@ defmodule KusaData.Test.Fixtures do
     }
   end
 
-  def slot(entrant_id, entrant_name, user_id) do
+  def slot(entrant_id, entrant_name, user_id, player_id \\ nil) do
     %{
       "entrant" => %{
         "id" => entrant_id,
         "name" => entrant_name,
-        "participants" => [%{"user" => %{"id" => user_id}}]
+        "participants" => [
+          %{"user" => %{"id" => user_id, "player" => player_id && %{"id" => player_id}}}
+        ]
       }
     }
   end
@@ -152,10 +181,14 @@ defmodule KusaData.Test.Fixtures do
         "displayScore" => "3 - 1",
         "fullRoundText" => "Winners Round 1",
         "completedAt" => 1_784_000_000 + id,
-        "event" => %{"id" => 100, "name" => "Melee Singles"},
+        "event" => %{
+          "id" => 100,
+          "name" => "Melee Singles",
+          "videogame" => %{"id" => 1, "name" => "Super Smash Bros. Melee", "slug" => "melee"}
+        },
         "slots" => [
-          slot(our_entrant_id, "Mango", 10),
-          slot(their_entrant_id, "Armada", 20)
+          slot(our_entrant_id, "Mango", 10, 100),
+          slot(their_entrant_id, "Armada", 20, 200)
         ],
         "games" => [
           %{
@@ -195,6 +228,55 @@ defmodule KusaData.Test.Fixtures do
           }
         }
       }
+    }
+  end
+
+  @doc "Raw start.gg event set node for the `EventSets` query."
+  def event_set(id, winner_id, slot_ids, overrides \\ %{}) do
+    Map.merge(
+      %{
+        "id" => id,
+        "state" => 3,
+        "winnerId" => winner_id,
+        "displayScore" => "3 - 1",
+        "fullRoundText" => "Winners Round 1",
+        "completedAt" => 1_784_000_000 + id,
+        "slots" =>
+          Enum.map(slot_ids, fn sid ->
+            %{"entrant" => %{"id" => sid, "name" => "Entrant #{sid}"}}
+          end)
+      },
+      overrides
+    )
+  end
+
+  def event_sets_response(sets, total \\ nil) do
+    total = total || length(sets)
+
+    %{
+      "data" => %{
+        "event" => %{
+          "id" => 100,
+          "name" => "Melee Singles",
+          "sets" => %{
+            "nodes" => sets,
+            "pageInfo" => %{"total" => total, "totalPages" => 1}
+          }
+        }
+      }
+    }
+  end
+
+  @doc "Mapped set shape as produced by `KusaData.Events.sets/1` (for engine tests)."
+  def mapped_set(id, winner_id, slot_ids, score \\ "3 - 1") do
+    %{
+      "id" => id,
+      "winner_id" => winner_id,
+      "display_score" => score,
+      "round" => "Winners Round 1",
+      "completed_at" => 1_784_000_000 + id,
+      "slots" =>
+        Enum.map(slot_ids, fn sid -> %{"entrant_id" => sid, "name" => "Entrant #{sid}"} end)
     }
   end
 

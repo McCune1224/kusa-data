@@ -12,6 +12,13 @@ defmodule KusaDataWeb.PlayerLiveTest do
   import KusaData.Test.LiveViewHelpers
 
   setup do
+    KusaData.Games.register(%{
+      slug: "ultimate",
+      videogame_id: 1386,
+      name: "Super Smash Bros. Ultimate",
+      short_name: "Ultimate"
+    })
+
     FakeTransport.put(
       :query,
       "PlayerIdentity",
@@ -53,5 +60,28 @@ defmodule KusaDataWeb.PlayerLiveTest do
 
     assert wait_has_element(view, "h3")
     assert render(view) =~ "No player with that id was found"
+  end
+
+  test "game-scoped URLs analyze only sets from that game", %{conn: conn} do
+    ultimate_event = %{
+      "id" => 200,
+      "name" => "Ultimate Singles",
+      "videogame" => %{"id" => 1386, "name" => "Super Smash Bros. Ultimate", "slug" => "ultimate"}
+    }
+
+    sets = [
+      Fixtures.set(1, 1, 2, 1),
+      Fixtures.set(2, 1, 2, 1, %{"event" => ultimate_event}),
+      Fixtures.set(3, 1, 2, 2, %{"event" => ultimate_event})
+    ]
+
+    FakeTransport.put(:query, "PlayerSets", Fixtures.player_sets_response(sets))
+
+    {:ok, view, _html} = live(conn, "/game/ultimate/player/100")
+
+    assert wait_has_element(view, "#characters")
+    assert render(view) =~ "Ultimate"
+    # Only the two ultimate sets are analyzed: 1 win, 1 loss (2 fetched).
+    assert render(view) =~ "last 2 completed sets of 2 fetched"
   end
 end

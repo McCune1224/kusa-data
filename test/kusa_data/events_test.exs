@@ -105,4 +105,49 @@ defmodule KusaData.EventsTest do
     FakeTransport.put(:query, "EventSeeding", Fixtures.seeding_response([]))
     assert {:ok, [], :miss} = Events.seeding(100)
   end
+
+  test "sets returns normalized set rows with entrant ids" do
+    FakeTransport.put(
+      :query,
+      "EventSets",
+      Fixtures.event_sets_response([
+        Fixtures.event_set(1, 11, [11, 12]),
+        Fixtures.event_set(2, 12, [11, 12], %{"displayScore" => "0 - 3"})
+      ])
+    )
+
+    assert {:ok, rows, :miss} = Events.sets(100)
+    assert length(rows) == 2
+    assert hd(rows)["winner_id"] == 11
+    assert hd(rows)["display_score"] == "3 - 1"
+
+    assert hd(rows)["slots"] == [
+             %{"entrant_id" => 11, "name" => "Entrant 11"},
+             %{"entrant_id" => 12, "name" => "Entrant 12"}
+           ]
+  end
+
+  test "analytics joins seeds, results, and sets through the bracket engine" do
+    FakeTransport.put(
+      :query,
+      "EventSeeding",
+      Fixtures.seeding_response([Fixtures.entrant(11, "Mango", 1, 501)])
+    )
+
+    FakeTransport.put(
+      :query,
+      "EventResults",
+      Fixtures.results_response([Fixtures.standing(11, "Mango", 1, 501)])
+    )
+
+    FakeTransport.put(
+      :query,
+      "EventSets",
+      Fixtures.event_sets_response([Fixtures.event_set(1, 11, [11, 12])])
+    )
+
+    assert {:ok, data, :miss} = Events.analytics(100)
+    assert data["analysis"]["entrant_count"] == 2
+    assert data["analysis"]["match_count"] == 1
+  end
 end
