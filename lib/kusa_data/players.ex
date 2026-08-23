@@ -290,7 +290,10 @@ defmodule KusaData.Players do
     sets |> Enum.map(& &1["event"]["id"]) |> Enum.uniq() |> length()
   end
 
-  # Best placements from the cached per-event bracket analytics.
+  # Best placements from cached per-event data. Uses the light-weight
+  # standings endpoint rather than full bracket analytics — a player card
+  # touches many events, and analytics (seeds + sets, paginated) multiplied
+  # by a dozen events blows through start.gg's rate limit.
   defp finishes(player_id, sets) do
     sets
     |> Enum.map(& &1["event"]["id"])
@@ -298,7 +301,7 @@ defmodule KusaData.Players do
     |> Enum.take(@compare_events_limit)
     |> Task.async_stream(
       fn event_id -> {event_id, placement_for(player_id, event_id)} end,
-      max_concurrency: 6,
+      max_concurrency: 4,
       timeout: :infinity,
       ordered: false
     )
@@ -310,9 +313,9 @@ defmodule KusaData.Players do
   end
 
   defp placement_for(player_id, event_id) do
-    case Events.analytics(event_id) do
-      {:ok, data, _} ->
-        case Enum.find(data["analysis"]["entrants"], &(&1["player_id"] == player_id)) do
+    case Events.results(event_id) do
+      {:ok, standings, _status} ->
+        case Enum.find(standings, &(&1["player_id"] == player_id)) do
           %{"placement" => placement} -> {:ok, placement}
           _ -> :error
         end
@@ -505,9 +508,9 @@ defmodule KusaData.Players do
   end
 
   defp finish_month(event_id) do
-    case Events.analytics(event_id) do
-      {:ok, data, _} ->
-        month_key(data["event"]["startAt"] || data["analysis"]["context"]["start_at"])
+    case Events.get(event_id) do
+      {:ok, event, _} ->
+        month_key(event["startAt"])
 
       _ ->
         "unknown"

@@ -3,6 +3,8 @@ defmodule KusaDataWeb.EventLive do
 
   alias KusaData.Events
 
+  require Logger
+
   @impl true
   def mount(_params, _session, socket) do
     filter_form = to_form(%{"filter" => ""})
@@ -42,6 +44,7 @@ defmodule KusaDataWeb.EventLive do
       socket
       |> assign(
         tab: tab,
+        identifier: identifier,
         event: nil,
         error: nil,
         loading: true,
@@ -75,6 +78,7 @@ defmodule KusaDataWeb.EventLive do
         {:noreply, spawn_tab_load(socket, event, tab)}
 
       {:error, reason} ->
+        Logger.error("event load failed for #{socket.assigns.identifier}: #{inspect(reason)}")
         {:noreply, assign(socket, event: nil, error: reason, loading: false)}
     end
   end
@@ -135,6 +139,8 @@ defmodule KusaDataWeb.EventLive do
         {:noreply, socket}
 
       {:error, reason} ->
+        Logger.error("event tab load failed (#{socket.assigns.tab}): #{inspect(reason)}")
+
         {:noreply,
          socket
          |> assign(loading: false, error: reason, rows_all: [], recap: nil, anomalies: [])

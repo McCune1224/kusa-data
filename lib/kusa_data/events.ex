@@ -23,6 +23,8 @@ defmodule KusaData.Events do
 
   @doc "Event header by numeric id or full slug (`tournament/x/event/y`)."
   @spec get(integer() | String.t()) :: {:ok, map(), :hit | :miss | :bypass} | {:error, term()}
+  def get(nil), do: {:error, :not_found}
+
   def get(identifier) do
     Cache.fetch("event:#{identifier}", 5 * 60, fn ->
       with {:ok, data} <- Client.query(Queries.event_detail(identifier)),
