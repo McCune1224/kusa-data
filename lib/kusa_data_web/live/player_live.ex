@@ -92,8 +92,12 @@ defmodule KusaDataWeb.PlayerLive do
       {:noreply, assign(socket, watched: true) |> put_flash(:info, "Player watch enabled.")}
     else
       {:noreply,
-       push_navigate(
-         socket,
+       socket
+       |> put_flash(
+         :info,
+         "Login is optional — it's only used to save your watches and bookmarks."
+       )
+       |> push_navigate(
          to:
            "/auth?mode=login&return_to=#{URI.encode_www_form("/player/#{socket.assigns.player_id}")}"
        )}

@@ -94,7 +94,10 @@ defmodule KusaDataWeb.TournamentLive do
     else
       {:noreply,
        socket
-       |> put_flash(:error, "Log in to save tournaments.")
+       |> put_flash(
+         :info,
+         "Login is optional — it's only used to save your bookmarks and watches."
+       )
        |> push_navigate(
          to:
            "/auth?mode=login&return_to=#{URI.encode_www_form("/tournament/#{socket.assigns.slug}")}"
@@ -126,8 +129,12 @@ defmodule KusaDataWeb.TournamentLive do
       {:noreply, assign(socket, watched: true) |> put_flash(:info, "Tournament watch enabled.")}
     else
       {:noreply,
-       push_navigate(
-         socket,
+       socket
+       |> put_flash(
+         :info,
+         "Login is optional — it's only used to save your bookmarks and watches."
+       )
+       |> push_navigate(
          to:
            "/auth?mode=login&return_to=#{URI.encode_www_form("/tournament/#{socket.assigns.slug}")}"
        )}

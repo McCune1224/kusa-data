@@ -26,6 +26,8 @@ defmodule KusaDataWeb.HomeLiveTest do
 
     assert has_element?(view, "#nearby-form")
     assert has_element?(view, "#link-jump-form")
+    assert has_element?(view, "#account-note")
+    assert render(view) =~ "No account needed to browse"
     assert wait_has_element(view, "#tournaments")
     assert has_element?(view, "a[href='/?mode=past']")
     assert has_element?(view, "a[href='/?mode=search']")
