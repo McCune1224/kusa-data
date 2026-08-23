@@ -73,7 +73,27 @@ defmodule KusaDataWeb.TournamentGrid do
                     <span class="flex items-center gap-2">
                       <.icon name="hero-trophy" class="size-3.5 text-stone-600" />
                       {event_count(tournament)} event{plural(event_count(tournament))}
+                      <%= if entrant_count(tournament) > 0 do %>
+                        <span aria-hidden="true" class="text-stone-700">·</span>
+                        {entrant_count(tournament)} entrant{plural(entrant_count(tournament))}
+                      <% end %>
                     </span>
+                  </div>
+
+                  <div :if={game_badges(tournament) != []} class="mt-3 flex flex-wrap gap-1">
+                    <span
+                      :for={label <- game_badges(tournament)}
+                      class="border border-stone-800 bg-stone-950/60 px-1.5 py-0.5 text-[11px] font-medium text-stone-400"
+                    >
+                      {label}
+                    </span>
+                  </div>
+
+                  <div
+                    :if={relative_start(tournament)}
+                    class="mt-2 font-mono text-xs text-lime-300/80"
+                  >
+                    {relative_start(tournament)}
                   </div>
 
                   <div class="mt-5 flex items-center justify-between border-t border-stone-800/70 pt-4">
@@ -141,6 +161,48 @@ defmodule KusaDataWeb.TournamentGrid do
   end
 
   defp event_count(tournament), do: length(tournament["events"] || [])
+
+  defp entrant_count(tournament) do
+    tournament["events"]
+    |> List.wrap()
+    |> Enum.map(&(&1["numEntrants"] || 0))
+    |> Enum.sum()
+  end
+
+  # Up to three distinct game short names on the tournament's events.
+  defp game_badges(tournament) do
+    tournament["events"]
+    |> List.wrap()
+    |> Enum.map(fn event ->
+      case KusaData.Games.normalize(event["videogame"]) do
+        %{short_name: name} -> name
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+    |> Enum.take(3)
+  end
+
+  defp relative_start(%{"startAt" => nil}), do: nil
+
+  defp relative_start(tournament) do
+    case tournament["startAt"] do
+      nil ->
+        nil
+
+      unix ->
+        days = div(unix - System.system_time(:second), 86_400)
+
+        cond do
+          days < 0 -> nil
+          days == 0 -> "today"
+          days == 1 -> "tomorrow"
+          days <= 7 -> "in #{days} days"
+          true -> nil
+        end
+    end
+  end
 
   defp plural(1), do: ""
   defp plural(_), do: "s"

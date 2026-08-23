@@ -53,6 +53,41 @@ defmodule KusaDataWeb.PlayerLiveTest do
     assert has_element?(view, "#recent-sets")
   end
 
+  test "header shows prefix badge, location, bio, and recent events", %{conn: conn} do
+    FakeTransport.put(
+      :query,
+      "PlayerIdentity",
+      Fixtures.player_identity_response(100, "Mango", 10, %{
+        "data" => %{
+          "player" => %{
+            "id" => 100,
+            "gamerTag" => "Mango",
+            "prefix" => "EG",
+            "user" => %{
+              "id" => 10,
+              "name" => "Joseph",
+              "bio" => "The GOAT of Melee.",
+              "location" => %{"city" => "Tustin", "state" => "CA", "country" => "US"},
+              "images" => [%{"url" => "https://example.com/mango.png"}]
+            }
+          }
+        }
+      })
+    )
+
+    {:ok, view, _html} = live(conn, "/player/100")
+
+    assert wait_has_element(view, "#characters")
+    html = render(view)
+    assert html =~ "EG"
+    assert html =~ "The GOAT of Melee."
+    assert html =~ "Tustin, CA, US"
+    assert html =~ "https://example.com/mango.png"
+    # Recent events section links into the event page.
+    assert has_element?(view, "#recent-events")
+    assert has_element?(view, "#recent-event-100")
+  end
+
   test "unknown players render the empty state", %{conn: conn} do
     FakeTransport.put(:query, "PlayerIdentity", %{"data" => %{"player" => nil}})
 

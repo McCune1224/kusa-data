@@ -55,4 +55,21 @@ defmodule KusaData.StatsTest do
     FakeTransport.put(:query, "PlayerIdentity", %{"data" => %{"player" => nil}})
     assert {:error, :not_found} = Stats.for_player(999)
   end
+
+  test "stats include profile fields and recent events" do
+    sets = [
+      Fixtures.set(1, 1, 2, 1),
+      Fixtures.set(2, 1, 2, 2)
+    ]
+
+    FakeTransport.put(:query, "PlayerSets", Fixtures.player_sets_response(sets))
+
+    assert {:ok, stats, :miss} = Stats.for_player(100)
+    assert stats["prefix"] == nil
+
+    assert [%{"event_id" => 100, "sets" => 2, "wins" => 1, "losses" => 1} = event] =
+             stats["recent_events"]
+
+    assert event["game_slug"] == "melee"
+  end
 end

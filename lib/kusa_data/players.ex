@@ -11,7 +11,7 @@ defmodule KusaData.Players do
 
   @identity_ttl 15 * 60
   @history_ttl 15 * 60
-  @per_page 50
+  @per_page 40
   @max_pages 50
   @compare_events_limit 12
 
@@ -27,11 +27,18 @@ defmodule KusaData.Players do
 
       with {:ok, data} <- Client.query(document, variables),
            %{"player" => %{} = player} <- data do
+        user = player["user"] || %{}
+
         {:ok,
          %{
            "player_id" => player["id"],
            "gamer_tag" => player["gamerTag"],
-           "user_id" => player["user"]["id"]
+           "user_id" => user["id"],
+           "prefix" => player["prefix"],
+           "user_name" => user["name"],
+           "bio" => user["bio"],
+           "location" => location_string(user["location"]),
+           "avatar_url" => avatar_url(user["images"])
          }}
       else
         %{"player" => nil} -> {:error, :not_found}
@@ -39,6 +46,27 @@ defmodule KusaData.Players do
       end
     end)
   end
+
+  defp location_string(nil), do: nil
+
+  defp location_string(location) do
+    [location["city"], location["state"], location["country"]]
+    |> Enum.reject(&(is_nil(&1) or &1 == ""))
+    |> Enum.join(", ")
+    |> case do
+      "" -> nil
+      text -> text
+    end
+  end
+
+  defp avatar_url(images) when is_list(images) do
+    case Enum.find(images, & &1["url"]) do
+      %{"url" => url} -> url
+      _ -> nil
+    end
+  end
+
+  defp avatar_url(_), do: nil
 
   @doc """
   Full, filterable set history for a player.
@@ -78,7 +106,13 @@ defmodule KusaData.Players do
   end
 
   defp fetch_all_sets(player_id, page, acc) do
-    with {:ok, data} <- Client.query(Queries.player_sets(player_id, page, @per_page)) do
+    with {:ok, data} <-
+           Client.query_paged(
+             fn per_page ->
+               Queries.player_sets(player_id, page, per_page)
+             end,
+             @per_page
+           ) do
       sets_info = data["player"]["sets"]
       nodes = sets_info["nodes"] || []
       total_pages = sets_info["pageInfo"]["totalPages"] || 1

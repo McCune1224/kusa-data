@@ -41,6 +41,30 @@ defmodule KusaDataWeb.HomeLiveTest do
     assert element(view, "#tournament-1") |> render() =~ "Test Melee Weekly"
   end
 
+  test "game filter chips render and switch while preserving mode", %{conn: conn} do
+    seed_upcoming()
+
+    {:ok, view, _html} = live(conn, "/")
+
+    assert has_element?(view, "#game-filter")
+    # Melee (the backend default) starts active.
+    assert has_element?(view, "#game-filter a.bg-lime-400")
+
+    # Switching to Ultimate keeps the upcoming mode in the URL.
+    ultimate_slug = "ultimate"
+
+    KusaData.Games.register(%{
+      slug: ultimate_slug,
+      videogame_id: 1386,
+      name: "Super Smash Bros. Ultimate",
+      short_name: "Ultimate"
+    })
+
+    {:ok, view, _html} = live(conn, "/?game=ultimate")
+    assert wait_has_element(view, "#tournaments")
+    assert render(view) =~ "Ultimate"
+  end
+
   test "nearby search attaches the resolved place and renders cards", %{conn: conn} do
     FakeTransport.put(
       :url,

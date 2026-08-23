@@ -124,7 +124,6 @@ defmodule KusaData.GraphQL.Queries do
            id
            name
            slug
-           abbreviation
          }
          pageInfo {
            total
@@ -290,6 +289,82 @@ defmodule KusaData.GraphQL.Queries do
      """, %{id: event_id, page: page, perPage: per_page}}
   end
 
+  @doc """
+  Phases and pools (phase groups) for an event, for the bracket view's
+  phase/group selector.
+  """
+  @spec event_phases(integer()) :: {String.t(), map()}
+  def event_phases(event_id) do
+    {"""
+     query EventPhases($id: ID!) {
+       event(id: $id) {
+         id
+         name
+         phases {
+           id
+           name
+           phaseGroups(query: { perPage: 100 }) {
+             pageInfo {
+               total
+             }
+             nodes {
+               id
+               displayIdentifier
+             }
+           }
+         }
+       }
+     }
+     """, %{id: event_id}}
+  end
+
+  @doc """
+  Bracket-aware sets: numeric round (negative = losers side), phase group
+  identity, and slot prerequisite links so a bracket tree and player paths
+  can be reconstructed client-side.
+  """
+  @spec event_bracket_sets(integer(), pos_integer(), pos_integer()) :: {String.t(), map()}
+  def event_bracket_sets(event_id, page, per_page) do
+    {"""
+     query EventBracketSets($id: ID!, $page: Int!, $perPage: Int!) {
+       event(id: $id) {
+         id
+         name
+         sets(page: $page, perPage: $perPage, sortType: STANDARD) {
+           pageInfo {
+             total
+             totalPages
+           }
+           nodes {
+             id
+             state
+             winnerId
+             displayScore
+             fullRoundText
+             round
+             completedAt
+             phaseGroup {
+               id
+               displayIdentifier
+               phase {
+                 id
+                 name
+               }
+             }
+             slots {
+               prereqId
+               entrant {
+                 id
+                 name
+               }
+             }
+           }
+         }
+       }
+     }
+     """, %{id: event_id, page: page, perPage: per_page}}
+  end
+
   @spec participant_search(String.t(), String.t(), pos_integer()) :: {String.t(), map()}
   def participant_search(tournament_slug, search_string, per_page) do
     {"""
@@ -328,8 +403,19 @@ defmodule KusaData.GraphQL.Queries do
        player(id: $id) {
          id
          gamerTag
+         prefix
          user {
            id
+           name
+           bio
+           location {
+             city
+             state
+             country
+           }
+           images(type: "profile") {
+             url
+           }
          }
        }
      }

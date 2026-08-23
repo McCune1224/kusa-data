@@ -18,7 +18,13 @@ defmodule KusaData.Application do
     children = core_children ++ repo_child() ++ redis_child() ++ poller_child()
 
     opts = [strategy: :one_for_one, name: KusaData.Supervisor]
-    Supervisor.start_link(children, opts)
+    {:ok, pid} = Supervisor.start_link(children, opts)
+
+    # Warm the game registry from start.gg in the background; failures are
+    # non-fatal and the app runs with whatever games are already known.
+    Task.start(&KusaData.Games.sync/0)
+
+    {:ok, pid}
   end
 
   # Tell Phoenix to update the endpoint configuration

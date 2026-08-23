@@ -135,13 +135,14 @@ defmodule KusaData.Events do
     end)
   end
 
-  @doc "Drops cached seeds/results/sets/analytics so the next fetch is fresh."
+  @doc "Drops cached seeds/results/sets/analytics/brackets so the next fetch is fresh."
   @spec clear_cache(integer()) :: :ok
   def clear_cache(event_id) do
     Cache.delete("seeds:#{event_id}")
     Cache.delete("results:#{event_id}")
     Cache.delete("sets:#{event_id}")
     Cache.delete("analytics:#{event_id}")
+    KusaData.Brackets.clear_cache(event_id)
     :ok
   end
 

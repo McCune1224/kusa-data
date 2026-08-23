@@ -197,14 +197,42 @@ defmodule KusaDataWeb.PlayerLive do
 
             <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
               <div class="flex min-w-0 items-center gap-4">
-                <.avatar name={@stats["gamer_tag"]} class="size-12 text-base" />
+                <%= if @stats["avatar_url"] do %>
+                  <img
+                    src={@stats["avatar_url"]}
+                    alt={@stats["gamer_tag"] || "player"}
+                    class="size-12 shrink-0 rounded-full border border-stone-800 object-cover"
+                  />
+                <% else %>
+                  <.avatar name={@stats["gamer_tag"]} class="size-12 text-base" />
+                <% end %>
                 <div class="min-w-0">
-                  <h1 class="truncate text-3xl font-semibold tracking-tight text-stone-50">
-                    {@stats["gamer_tag"]}
-                  </h1>
-                  <div class="mt-1 font-mono text-[13px] text-stone-400">
-                    player {@stats["player_id"]} · {set_history_label(@stats)}
+                  <div class="flex min-w-0 flex-wrap items-center gap-2">
+                    <%= if @stats["prefix"] && @stats["prefix"] != "" do %>
+                      <span class="shrink-0 rounded-md bg-stone-800 px-2 py-0.5 font-mono text-sm font-semibold uppercase tracking-wide text-stone-200">
+                        {@stats["prefix"]}
+                      </span>
+                    <% end %>
+                    <h1 class="truncate text-3xl font-semibold tracking-tight text-stone-50">
+                      {@stats["gamer_tag"]}
+                    </h1>
                   </div>
+                  <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[13px] text-stone-400">
+                    <span>player {@stats["player_id"]}</span>
+                    <span aria-hidden="true" class="text-stone-700">·</span>
+                    <span>{set_history_label(@stats)}</span>
+                    <%= if @stats["location"] do %>
+                      <span class="flex items-center gap-1 font-sans">
+                        <.icon name="hero-map-pin" class="size-3.5 text-stone-500" />
+                        {@stats["location"]}
+                      </span>
+                    <% end %>
+                  </div>
+                  <%= if @stats["bio"] && @stats["bio"] != "" do %>
+                    <p class="mt-2 max-w-xl text-sm leading-relaxed text-stone-400">
+                      {@stats["bio"]}
+                    </p>
+                  <% end %>
                 </div>
               </div>
               <div class="flex items-center gap-1">
@@ -357,6 +385,47 @@ defmodule KusaDataWeb.PlayerLive do
               <.card class="p-5 lg:col-span-2">
                 <div class="flex items-center gap-2">
                   <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                    Recent events
+                  </h2>
+                  <span class="text-sm text-stone-500">(most recent first)</span>
+                </div>
+                <div id="recent-events" class="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div class="hidden only:block text-sm text-stone-500">No events yet.</div>
+                  <.link
+                    :for={event <- @stats["recent_events"]}
+                    navigate={"/event/#{event["event_id"]}" <> event_game_query(event)}
+                    id={"recent-event-#{event["event_id"]}"}
+                    class="group rounded-xl border border-stone-800 bg-stone-900/40 px-4 py-3 transition-colors hover:border-lime-400/40 hover:bg-stone-900/70"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="min-w-0 truncate text-[15px] font-medium text-stone-200 transition-colors group-hover:text-lime-300">
+                        {event["name"]}
+                      </span>
+                      <span class={[
+                        "shrink-0 font-mono text-[13px]",
+                        event["losses"] == 0 && event["wins"] > 0 && "text-emerald-400",
+                        !(event["losses"] == 0 && event["wins"] > 0) && "text-stone-300"
+                      ]}>
+                        {event["wins"]}-{event["losses"]}
+                      </span>
+                    </div>
+                    <div class="mt-1 flex items-center gap-2 text-[13px] text-stone-500">
+                      <%= if event["game_slug"] do %>
+                        <.badge tone="neutral">{game_label(event["game_slug"])}</.badge>
+                      <% end %>
+                      <span>{event["sets"]} sets</span>
+                      <%= if event["last_played"] do %>
+                        <span aria-hidden="true">·</span>
+                        <span>{relative_time(event["last_played"])}</span>
+                      <% end %>
+                    </div>
+                  </.link>
+                </div>
+              </.card>
+
+              <.card class="p-5 lg:col-span-2">
+                <div class="flex items-center gap-2">
+                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
                     Recent sets
                   </h2>
                   <span class="text-sm text-stone-500">(latest first)</span>
@@ -405,6 +474,9 @@ defmodule KusaDataWeb.PlayerLive do
 
   defp compare_query(nil), do: ""
   defp compare_query(game), do: "&game=#{game}"
+
+  defp event_game_query(%{"game_slug" => slug}) when is_binary(slug), do: "?game=#{slug}"
+  defp event_game_query(_), do: ""
 
   defp cell_class(cell) do
     if cell["games"] > 0 and cell["wins"] * 2 >= cell["games"] do

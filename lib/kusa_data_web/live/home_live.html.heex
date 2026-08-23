@@ -54,15 +54,21 @@
 
     <section class="border-b border-stone-800 py-6">
       <div class="flex flex-wrap items-center gap-1 rounded-xl border border-stone-800 bg-stone-900/40 p-1">
-        <.link patch={browse_path(:upcoming, [])} class={tab_class(@mode == :upcoming)}>
+        <.link
+          patch={game_chip_path(%{mode: :upcoming, zip: @zip, radius: @radius}, @game)}
+          class={tab_class(@mode == :upcoming)}
+        >
           <.icon name="hero-bolt" class="size-4" />
           <span>Upcoming</span>
         </.link>
-        <.link patch={browse_path(:past, [])} class={tab_class(@mode == :past)}>
+        <.link patch={browse_path(:past, game: @game)} class={tab_class(@mode == :past)}>
           <.icon name="hero-clock" class="size-4" />
           <span>Past</span>
         </.link>
-        <.link patch={browse_path(:search, [])} class={tab_class(@mode == :search)}>
+        <.link
+          patch={browse_path(:search, q: @q, game: @game)}
+          class={tab_class(@mode == :search)}
+        >
           <.icon name="hero-magnifying-glass" class="size-4" />
           <span>Search</span>
         </.link>
@@ -74,6 +80,47 @@
           <.icon name="hero-globe-americas" class="size-4" />
           <span>Regions</span>
         </.link>
+      </div>
+
+      <div id="game-filter" class="mt-3 flex flex-wrap items-center gap-2">
+        <span class="mr-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+          Game
+        </span>
+        <% chips =
+          ([%{slug: KusaData.Games.default().slug, short_name: "Melee"}] ++
+             [
+               %{slug: "all", short_name: "All"}
+               | Enum.reject(@known_games, &(&1.slug == KusaData.Games.default().slug))
+             ])
+          |> Enum.uniq_by(& &1.slug) %>
+        <%= for chip <- chips do %>
+          <% slug = if(chip.slug == KusaData.Games.default().slug, do: nil, else: chip.slug) %>
+          <.link
+            patch={
+              game_chip_path(
+                %{
+                  mode: @mode,
+                  zip: @zip,
+                  radius: @radius,
+                  from: @from,
+                  to: @to,
+                  q: @q,
+                  results_only: @results_only
+                },
+                slug
+              )
+            }
+            class={[
+              "rounded-full px-3 py-1 text-[13px] font-medium transition-colors",
+              active_game?(chip.slug, @game) &&
+                "bg-lime-400 text-stone-950 hover:bg-lime-300",
+              !active_game?(chip.slug, @game) &&
+                "border border-stone-800 bg-stone-900/40 text-stone-400 hover:border-stone-700 hover:text-stone-100"
+            ]}
+          >
+            {chip.short_name}
+          </.link>
+        <% end %>
       </div>
 
       <div class="mt-6">
@@ -125,7 +172,7 @@
                     {"Los Angeles", "90012", "100mi"}
                   ] do %>
                     <.link
-                      patch={browse_path(:upcoming, zip: zip, radius: radius)}
+                      patch={browse_path(:upcoming, zip: zip, radius: radius, game: @game)}
                       class="inline-flex items-center gap-1.5 text-[15px] text-stone-300 transition-colors hover:text-lime-300"
                     >
                       <.icon name="hero-map-pin" class="size-3.5 text-stone-600" />
@@ -209,7 +256,7 @@
                 </span>
                 <%= for {label, from, to} <- quick_ranges() do %>
                   <.link
-                    patch={browse_path(:past, from: from, to: to)}
+                    patch={browse_path(:past, from: from, to: to, game: @game)}
                     class="inline-flex items-center gap-1.5 text-[15px] text-stone-300 transition-colors hover:text-lime-300"
                   >
                     <.icon name="hero-calendar-days" class="size-3.5 text-stone-600" />
@@ -267,6 +314,7 @@
             <%= if @mode == :upcoming do %>
               · {if @zip, do: "within #{@radius} of #{@zip}", else: "worldwide"}
             <% end %>
+            · {game_label(@game) || "Melee"}
             <%= if @mode == :past && @results_only do %>
               · results only
             <% end %>

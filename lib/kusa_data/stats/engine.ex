@@ -114,7 +114,7 @@ defmodule KusaData.Stats.Engine do
   defp characters_for(set, our_entrant_id) do
     (set["games"] || [])
     |> Enum.flat_map(fn game ->
-      game["selections"]
+      (game["selections"] || [])
       |> Enum.filter(&character_selection?/1)
       |> Enum.filter(fn selection -> selection["entrant"]["id"] == our_entrant_id end)
       |> Enum.map(fn selection -> selection["character"]["name"] end)

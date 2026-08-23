@@ -20,13 +20,15 @@ defmodule KusaDataWeb.HomeLive do
        results_only: false,
        zip: nil,
        radius: @default_radius,
+       game: nil,
        place: nil,
        total: 0,
        next_page: nil,
        error: nil,
        loading: true,
        page: 1,
-       radii: @radii
+       radii: @radii,
+       known_games: KusaData.Games.all()
      )
      |> assign_forms()
      |> stream_configure(:tournaments, dom_id: fn t -> "tournament-#{t["id"]}" end)
@@ -42,6 +44,7 @@ defmodule KusaDataWeb.HomeLive do
     from = valid_iso_or_nil(params["from"])
     to = valid_iso_or_nil(params["to"])
     results_only = params["results_only"] in [true, "true", "1"]
+    game = valid_game(params["game"])
 
     socket =
       socket
@@ -53,6 +56,7 @@ defmodule KusaDataWeb.HomeLive do
         from: from,
         to: to,
         results_only: results_only,
+        game: game,
         place: nil,
         loading: true,
         page: 1,
@@ -107,7 +111,7 @@ defmodule KusaDataWeb.HomeLive do
   end
 
   defp build_query(assigns, page) do
-    base = %{page: page}
+    base = %{page: page, games: games_param(assigns.game)}
 
     case assigns.mode do
       :upcoming ->
@@ -126,6 +130,20 @@ defmodule KusaDataWeb.HomeLive do
         Map.merge(base, %{mode: :search, q: assigns.q})
     end
   end
+
+  # nil means the backend default (Melee); "all" widens to every game.
+  defp games_param(nil), do: nil
+  defp games_param("all"), do: :all
+  defp games_param(slug), do: slug
+
+  defp valid_game(nil), do: nil
+  defp valid_game("all"), do: "all"
+
+  defp valid_game(slug) when is_binary(slug) do
+    if KusaData.Games.by_slug(slug), do: slug, else: nil
+  end
+
+  defp valid_game(_), do: nil
 
   defp next_page(page, total) do
     if page * 24 < total, do: page + 1, else: nil
@@ -277,6 +295,38 @@ defmodule KusaDataWeb.HomeLive do
   defp mode_title(:upcoming), do: "Upcoming tournaments"
   defp mode_title(:past), do: "Past tournaments"
   defp mode_title(:search), do: "Tournament search"
+
+  defp game_chip_path(%{mode: :upcoming} = assigns, game),
+    do: browse_path(:upcoming, zip: assigns.zip, radius: assigns.radius, game: game)
+
+  defp game_chip_path(%{mode: :past} = assigns, game),
+    do:
+      browse_path(
+        :past,
+        from: assigns.from,
+        to: assigns.to,
+        q: assigns.q,
+        results_only: assigns.results_only && "true",
+        game: game
+      )
+
+  defp game_chip_path(%{mode: :search} = assigns, game),
+    do: browse_path(:search, q: assigns.q, game: game)
+
+  # The Melee backend default renders as no explicit param.
+  defp active_game?(game, nil), do: game == KusaData.Games.default().slug
+  defp active_game?(game, current), do: game == current
+
+  defp game_label(nil), do: nil
+
+  defp game_label("all"), do: "all games"
+
+  defp game_label(slug) do
+    case KusaData.Games.by_slug(slug) do
+      %{short_name: name} -> name
+      nil -> slug
+    end
+  end
 
   defp mode_subtitle(%{mode: :upcoming, zip: zip, place: place}) when zip != nil,
     do: "Melee near #{place_city(place)}"

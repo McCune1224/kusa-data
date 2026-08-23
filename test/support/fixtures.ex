@@ -147,12 +147,26 @@ defmodule KusaData.Test.Fixtures do
     }
   end
 
-  def player_identity_response(player_id, gamer_tag, user_id) do
-    %{
-      "data" => %{
-        "player" => %{"id" => player_id, "gamerTag" => gamer_tag, "user" => %{"id" => user_id}}
-      }
-    }
+  def player_identity_response(player_id, gamer_tag, user_id, overrides \\ %{}) do
+    Map.merge(
+      %{
+        "data" => %{
+          "player" => %{
+            "id" => player_id,
+            "gamerTag" => gamer_tag,
+            "prefix" => nil,
+            "user" => %{
+              "id" => user_id,
+              "name" => nil,
+              "bio" => nil,
+              "location" => nil,
+              "images" => []
+            }
+          }
+        }
+      },
+      overrides
+    )
   end
 
   def slot(entrant_id, entrant_name, user_id, player_id \\ nil) do
@@ -224,7 +238,7 @@ defmodule KusaData.Test.Fixtures do
           "gamerTag" => "Mango",
           "sets" => %{
             "nodes" => sets,
-            "pageInfo" => %{"total" => total, "totalPages" => max(1, div(total + 49, 50))}
+            "pageInfo" => %{"total" => total, "totalPages" => max(1, div(total + 39, 40))}
           }
         }
       }
@@ -248,6 +262,78 @@ defmodule KusaData.Test.Fixtures do
       },
       overrides
     )
+  end
+
+  @doc "Slot node for the `EventBracketSets` query, with an optional prereq link."
+  def bracket_slot(entrant_id, name, prereq_id \\ nil) do
+    %{
+      "prereqId" => prereq_id,
+      "entrant" => %{"id" => entrant_id, "name" => name}
+    }
+  end
+
+  @doc "Raw start.gg set node for the `EventBracketSets` query."
+  def bracket_set_node(id, winner_id, slots, overrides \\ %{}) do
+    Map.merge(
+      %{
+        "id" => id,
+        "state" => 3,
+        "winnerId" => winner_id,
+        "displayScore" => "2 - 0",
+        "fullRoundText" => "Winners Round 1",
+        "round" => 1,
+        "completedAt" => 1_784_000_000 + id,
+        "phaseGroup" => %{
+          "id" => 900,
+          "displayIdentifier" => "1",
+          "phase" => %{"id" => 80, "name" => "Finals"}
+        },
+        "slots" => slots
+      },
+      overrides
+    )
+  end
+
+  @doc "Response for the `EventPhases` query."
+  def event_phases_response(event_id, phases) do
+    %{
+      "data" => %{
+        "event" => %{
+          "id" => event_id,
+          "name" => "Melee Singles",
+          "phases" => phases
+        }
+      }
+    }
+  end
+
+  @doc "A phase node with phase groups given as `{id, display_identifier}` tuples."
+  def phase(id, name, groups) do
+    %{
+      "id" => id,
+      "name" => name,
+      "phaseGroups" => %{
+        "nodes" =>
+          Enum.map(groups, fn {group_id, label} ->
+            %{"id" => group_id, "displayIdentifier" => label}
+          end)
+      }
+    }
+  end
+
+  def bracket_sets_response(sets, total_pages \\ 1) do
+    %{
+      "data" => %{
+        "event" => %{
+          "id" => 100,
+          "name" => "Melee Singles",
+          "sets" => %{
+            "nodes" => sets,
+            "pageInfo" => %{"total" => length(sets), "totalPages" => total_pages}
+          }
+        }
+      }
+    }
   end
 
   def event_sets_response(sets, total \\ nil) do

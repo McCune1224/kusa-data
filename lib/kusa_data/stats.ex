@@ -12,7 +12,7 @@ defmodule KusaData.Stats do
   results stay separate.
   """
 
-  @sets_per_page 50
+  @sets_per_page 40
   @max_pages 6
   @cache_ttl 15 * 60
 
@@ -59,9 +59,71 @@ defmodule KusaData.Stats do
     with {:ok, identity} <- fetch_identity(player_id) do
       with {:ok, sets} <- fetch_sets(player_id) do
         sets = if game, do: Enum.filter(sets, &game_matches?(&1, game)), else: sets
-        {:ok, Engine.build(identity, sets)}
+
+        {:ok,
+         Engine.build(identity, sets)
+         |> Map.merge(profile_fields(identity))
+         |> Map.put("recent_events", recent_events(identity, sets))}
       end
     end
+  end
+
+  # Profile display fields ride along with the computed stats so the player
+  # page renders them from one payload. Missing values stay nil and the UI
+  # hides those elements.
+  defp profile_fields(identity) do
+    %{
+      "prefix" => identity["prefix"],
+      "user_name" => identity["user_name"],
+      "bio" => identity["bio"],
+      "location" => identity["location"],
+      "avatar_url" => identity["avatar_url"]
+    }
+  end
+
+  @recent_events_limit 8
+
+  defp recent_events(identity, sets) do
+    sets
+    |> Enum.group_by(& &1["event"]["id"])
+    |> Enum.map(fn {event_id, event_sets} ->
+      our_entrant = find_entrant_id(hd(event_sets), identity["user_id"])
+
+      wins =
+        Enum.count(event_sets, fn set ->
+          set["winnerId"] != nil and set["winnerId"] == our_entrant
+        end)
+
+      completed = Enum.count(event_sets, &(&1["completedAt"] != nil))
+
+      last_played =
+        event_sets
+        |> Enum.map(& &1["completedAt"])
+        |> Enum.reject(&is_nil/1)
+        |> Enum.max(fn -> nil end)
+
+      %{
+        "event_id" => event_id,
+        "name" => hd(event_sets)["event"]["name"],
+        "game_slug" => hd(event_sets)["event"]["videogame"]["slug"],
+        "sets" => length(event_sets),
+        "wins" => wins,
+        "losses" => completed - wins,
+        "last_played" => last_played
+      }
+    end)
+    |> Enum.sort_by(&{&1["last_played"] || 0}, :desc)
+    |> Enum.take(@recent_events_limit)
+  end
+
+  defp find_entrant_id(set, user_id) do
+    Enum.find_value(set["slots"] || [], fn slot ->
+      participants = slot["entrant"]["participants"] || []
+
+      if Enum.any?(participants, fn p -> p["user"] && p["user"]["id"] == user_id end) do
+        slot["entrant"]["id"]
+      end || nil
+    end)
   end
 
   # A set belongs to the selected game when its event reports that videogame
@@ -80,7 +142,13 @@ defmodule KusaData.Stats do
   end
 
   defp fetch_sets(player_id) do
-    with {:ok, first} <- Client.query(Queries.player_sets(player_id, 1, @sets_per_page)) do
+    with {:ok, first} <-
+           Client.query_paged(
+             fn per_page ->
+               Queries.player_sets(player_id, 1, per_page)
+             end,
+             @sets_per_page
+           ) do
       total_pages = min(first["player"]["sets"]["pageInfo"]["totalPages"] || 1, @max_pages)
 
       rest =
@@ -89,7 +157,14 @@ defmodule KusaData.Stats do
 
           pages
           |> Task.async_stream(
-            fn page -> Client.query(Queries.player_sets(player_id, page, @sets_per_page)) end,
+            fn page ->
+              Client.query_paged(
+                fn per_page ->
+                  Queries.player_sets(player_id, page, per_page)
+                end,
+                @sets_per_page
+              )
+            end,
             max_concurrency: 5,
             timeout: :infinity,
             ordered: false

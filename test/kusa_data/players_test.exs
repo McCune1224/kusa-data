@@ -19,14 +19,51 @@ defmodule KusaData.PlayersTest do
     :ok
   end
 
+  test "profile extracts prefix, location, and avatar" do
+    FakeTransport.put(
+      :query,
+      "PlayerIdentity",
+      Fixtures.player_identity_response(100, "Mango", 10, %{
+        "data" => %{
+          "player" => %{
+            "id" => 100,
+            "gamerTag" => "Mango",
+            "prefix" => "EG",
+            "user" => %{
+              "id" => 10,
+              "name" => "Joseph",
+              "bio" => "The GOAT.",
+              "location" => %{"city" => "Tustin", "state" => "CA", "country" => "US"},
+              "images" => [%{"url" => "https://example.com/mango.png"}]
+            }
+          }
+        }
+      })
+    )
+
+    assert {:ok, profile, :miss} = Players.profile(100)
+    assert profile["prefix"] == "EG"
+    assert profile["user_name"] == "Joseph"
+    assert profile["bio"] == "The GOAT."
+    assert profile["location"] == "Tustin, CA, US"
+    assert profile["avatar_url"] == "https://example.com/mango.png"
+  end
+
+  test "profile tolerates missing user fields" do
+    assert {:ok, profile, :miss} = Players.profile(100)
+    assert profile["prefix"] == nil
+    assert profile["location"] == nil
+    assert profile["avatar_url"] == nil
+  end
+
   test "history fetches the full set history without six-page truncation" do
-    # 8 pages of 50 sets: the old summary cap was 6 pages.
+    # 10 pages of 40 sets: the old summary cap was 6 pages.
     FakeTransport.put(
       :query,
       "PlayerSets",
       fn page ->
         Fixtures.player_sets_response(
-          Enum.map(((page - 1) * 50 + 1)..(page * 50)//1, fn i -> Fixtures.set(i, 1, 2, 1) end),
+          Enum.map(((page - 1) * 40 + 1)..(page * 40)//1, fn i -> Fixtures.set(i, 1, 2, 1) end),
           400
         )
       end

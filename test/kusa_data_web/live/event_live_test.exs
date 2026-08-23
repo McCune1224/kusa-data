@@ -147,4 +147,66 @@ defmodule KusaDataWeb.EventLiveTest do
     assert render(view) =~ "Entrants"
     assert render(view) =~ "Matches"
   end
+
+  test "bracket tab renders rounds and traces a player's path on click", %{conn: conn} do
+    FakeTransport.put(
+      :query,
+      "EventPhases",
+      Fixtures.event_phases_response(100, [
+        Fixtures.phase(80, "Finals", [{900, "1"}])
+      ])
+    )
+
+    FakeTransport.put(
+      :query,
+      "EventBracketSets",
+      Fixtures.bracket_sets_response([
+        Fixtures.bracket_set_node(1, 11, [
+          Fixtures.bracket_slot(11, "Mango"),
+          Fixtures.bracket_slot(12, "Armada")
+        ]),
+        Fixtures.bracket_set_node(
+          2,
+          13,
+          [
+            Fixtures.bracket_slot(11, "Mango"),
+            Fixtures.bracket_slot(13, "Hbox")
+          ],
+          %{"round" => 2, "fullRoundText" => "Winners Final"}
+        )
+      ])
+    )
+
+    {:ok, view, _html} = live(conn, "/event/100?tab=bracket")
+
+    assert wait_has_element(view, "#bracket-view")
+    assert has_element?(view, "#group-chip-900")
+    assert has_element?(view, "#bracket-set-1")
+    assert element(view, "#bracket-set-1") |> render() =~ "Mango"
+
+    # Clicking the losing player highlights both of their sets.
+    render_click(view, "focus-player", %{"entrant-id" => "11"})
+
+    assert has_element?(view, "#focus-run")
+    html = element(view, "#focus-run") |> render()
+    assert html =~ "&#39;s run"
+    assert html =~ "eliminated by"
+    assert html =~ "Hbox"
+    assert html =~ "W vs Armada"
+  end
+
+  test "bracket tab shows an empty state when no sets exist yet", %{conn: conn} do
+    FakeTransport.put(
+      :query,
+      "EventPhases",
+      Fixtures.event_phases_response(100, [])
+    )
+
+    FakeTransport.put(:query, "EventBracketSets", Fixtures.bracket_sets_response([]))
+
+    {:ok, view, _html} = live(conn, "/event/100?tab=bracket")
+
+    assert wait_has_element(view, "#bracket-view")
+    assert render(view) =~ "No bracket data yet"
+  end
 end

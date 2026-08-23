@@ -21,6 +21,36 @@ defmodule KusaData.GraphQL.Client do
     request(document, variables, 0)
   end
 
+  @doc """
+  Paged query with a complexity fallback. start.gg rejects any request that
+  would return more than 1000 objects, and the count depends on how much
+  nested data (games, selections) actually comes back — so the same perPage
+  can pass for one page and fail for another.
+
+  `query_fn` receives the page size and returns a `{document, variables}`
+  tuple. On a complexity rejection the request is retried at half the page
+  size (down to 10), so dense pages degrade gracefully instead of failing.
+  """
+  @spec query_paged((pos_integer() -> {String.t(), map()}), pos_integer()) ::
+          {:ok, map()} | {:error, term()}
+  def query_paged(query_fn, per_page)
+
+  def query_paged(query_fn, per_page) when per_page >= 20 do
+    case query(query_fn.(per_page)) do
+      {:error, {:graphql, [%{"message" => message}]}} = error ->
+        if String.contains?(message, "complexity") do
+          query_paged(query_fn, div(per_page, 2))
+        else
+          error
+        end
+
+      other ->
+        other
+    end
+  end
+
+  def query_paged(query_fn, _per_page), do: query(query_fn.(10))
+
   defp request(document, variables, retries) do
     body = %{"query" => document, "variables" => variables}
 

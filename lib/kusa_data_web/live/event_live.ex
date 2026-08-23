@@ -20,6 +20,10 @@ defmodule KusaDataWeb.EventLive do
        game_slug: nil,
        recap: nil,
        watched: false,
+       brackets: [],
+       groups: [],
+       selected_group: nil,
+       focus_run: nil,
        nav: :tournaments
      )
      |> stream_configure(:rows, dom_id: fn row -> "row-#{row["id"] || row["entrant_id"]}" end)}
@@ -28,7 +32,11 @@ defmodule KusaDataWeb.EventLive do
   @impl true
   def handle_params(params, _uri, socket) do
     identifier = params["event"]
-    tab = if params["tab"] in ["seeds", "results", "standings"], do: params["tab"], else: "seeds"
+
+    tab =
+      if params["tab"] in ["seeds", "results", "standings", "bracket"],
+        do: params["tab"],
+        else: "seeds"
 
     socket =
       socket
@@ -37,6 +45,10 @@ defmodule KusaDataWeb.EventLive do
         event: nil,
         error: nil,
         loading: true,
+        brackets: [],
+        groups: [],
+        selected_group: nil,
+        focus_run: nil,
         game_slug: game_slug_from_params(params["game"]),
         watched: watch_status(socket.assigns.current_user, identifier)
       )
@@ -76,6 +88,20 @@ defmodule KusaDataWeb.EventLive do
     socket = assign(socket, tab_ref: nil)
 
     case result do
+      {:ok, %{"phases" => _} = brackets, _status} ->
+        groups = flatten_groups(brackets)
+
+        {:noreply,
+         socket
+         |> assign(
+           loading: false,
+           error: nil,
+           brackets: brackets,
+           groups: groups,
+           selected_group: default_group(groups),
+           focus_run: nil
+         )}
+
       {:ok, %{"analysis" => %{} = analysis}, _status} ->
         rows = analysis["entrants"]
         recap = KusaData.Stats.BracketEngine.recap(analysis)
@@ -142,6 +168,7 @@ defmodule KusaDataWeb.EventLive do
           "seeds" -> Events.seeding(event["id"])
           "results" -> Events.results(event["id"])
           "standings" -> Events.analytics(event["id"])
+          "bracket" -> KusaData.Brackets.for_event(event["id"])
         end
 
       send(parent, {:tab_loaded, ref, result})
@@ -182,6 +209,50 @@ defmodule KusaDataWeb.EventLive do
   @impl true
   def handle_event("tab-standings", _params, socket) do
     {:noreply, push_patch(socket, to: ~p"/event/#{socket.assigns.event["id"]}?tab=standings")}
+  end
+
+  @impl true
+  def handle_event("tab-bracket", _params, socket) do
+    {:noreply, push_patch(socket, to: ~p"/event/#{socket.assigns.event["id"]}?tab=bracket")}
+  end
+
+  @impl true
+  def handle_event("select-group", %{"group-id" => group_id}, socket) do
+    {:noreply, assign(socket, selected_group: group_id, focus_run: nil)}
+  end
+
+  @impl true
+  def handle_event("focus-player", %{"entrant-id" => entrant_id}, socket)
+      when is_binary(entrant_id) do
+    if socket.assigns.focus_run && socket.assigns.focus_run.entrant_id == entrant_id do
+      {:noreply, assign(socket, focus_run: nil)}
+    else
+      group = find_group(socket.assigns.groups, socket.assigns.selected_group)
+
+      run =
+        if group do
+          rounds = (group["winners_rounds"] || []) ++ (group["losers_rounds"] || [])
+          sets = Enum.flat_map(rounds, & &1["sets"])
+          path = KusaData.Brackets.run_for(sets, entrant_id)
+
+          name =
+            Enum.find_value(sets, fn set ->
+              Enum.find_value(set["slots"], fn slot ->
+                if slot["entrant_id"] == entrant_id, do: slot["name"], else: nil
+              end)
+            end)
+
+          %{
+            entrant_id: entrant_id,
+            name: name || "Unknown",
+            ids: MapSet.new(path["sets"], & &1["set_id"]),
+            entries: path["sets"],
+            eliminator: path["eliminator"]
+          }
+        end
+
+      {:noreply, assign(socket, focus_run: run)}
+    end
   end
 
   @impl true
@@ -229,6 +300,51 @@ defmodule KusaDataWeb.EventLive do
     Enum.filter(rows, fn row ->
       String.contains?(String.downcase(row["name"]), needle)
     end)
+  end
+
+  defp flatten_groups(brackets), do: brackets["groups"] || []
+
+  defp default_group([]), do: nil
+  defp default_group(groups), do: hd(groups)["id"]
+
+  defp find_group(_groups, nil), do: nil
+
+  defp find_group(groups, group_id) do
+    Enum.find(groups, &(&1["id"] == group_id))
+  end
+
+  attr :set, :map, required: true
+  attr :focus_ids, :any, required: true
+
+  def bracket_match(assigns) do
+    ~H"""
+    <div
+      id={"bracket-set-#{@set["id"]}"}
+      class={[
+        "rounded-lg border bg-stone-900/60 px-2.5 py-2 transition-colors",
+        MapSet.member?(@focus_ids, @set["id"]) &&
+          "border-lime-400/70 bg-lime-400/10",
+        !MapSet.member?(@focus_ids, @set["id"]) && "border-stone-800 hover:border-stone-700"
+      ]}
+    >
+      <button
+        :for={slot <- @set["slots"]}
+        type="button"
+        phx-click="focus-player"
+        phx-value-entrant-id={slot["entrant_id"]}
+        class={[
+          "flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left text-[13px] transition-colors hover:bg-stone-800/70",
+          slot["entrant_id"] == @set["winner_id"] && "font-semibold text-stone-100",
+          slot["entrant_id"] != @set["winner_id"] && "text-stone-400"
+        ]}
+      >
+        <span class="min-w-0 truncate">{slot["name"] || "TBD"}</span>
+        <%= if slot["entrant_id"] == @set["winner_id"] && @set["score"] do %>
+          <span class="shrink-0 font-mono text-xs text-lime-300">{@set["score"]}</span>
+        <% end %>
+      </button>
+    </div>
+    """
   end
 
   @impl true
@@ -297,7 +413,7 @@ defmodule KusaDataWeb.EventLive do
             </div>
           </div>
 
-          <div class="mt-8 grid grid-cols-3 gap-1 rounded-xl border border-stone-800 bg-stone-900/60 p-1 sm:inline-grid">
+          <div class="mt-8 grid grid-cols-4 gap-1 rounded-xl border border-stone-800 bg-stone-900/60 p-1 sm:inline-grid">
             <button
               type="button"
               id="tab-seeds"
@@ -328,136 +444,272 @@ defmodule KusaDataWeb.EventLive do
               <span>Standings</span>
               <span class="font-mono">· {@total}</span>
             </button>
-          </div>
-
-          <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-            <.form
-              for={@filter_form}
-              id="rows-filter-form"
-              phx-change="filter"
-              class="relative w-full max-w-xs"
+            <button
+              type="button"
+              id="tab-bracket"
+              phx-click="tab-bracket"
+              class={tab_class(@tab == "bracket")}
             >
-              <span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3.5">
-                <.icon name="hero-magnifying-glass" class="size-4 text-stone-600" />
-              </span>
-              <.input
-                field={@filter_form[:filter]}
-                type="text"
-                placeholder={filter_placeholder(@tab)}
-                class="h-10 w-full rounded-xl border border-stone-800 bg-stone-950 pl-10 pr-4 text-sm text-stone-200 placeholder-stone-600 outline-none transition focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
-              />
-            </.form>
-            <span class="shrink-0 font-mono text-[13px] text-stone-400">{@total} shown</span>
+              <.icon name="hero-squares-2x2" class="size-4" />
+              <span>Bracket</span>
+            </button>
           </div>
 
-          <div class="mt-4 overflow-hidden rounded-xl border border-stone-800/80">
-            <div class="flex items-center gap-4 border-b border-stone-800 bg-stone-900/60 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-              <div class="w-16 shrink-0"></div>
-              <div class="flex-1">Entrant</div>
-              <div :if={@tab == "standings"} class="hidden w-28 shrink-0 justify-end sm:flex">
-                Sets
-              </div>
-              <div :if={@tab == "standings"} class="hidden w-16 shrink-0 justify-end sm:flex">
-                Δ
-              </div>
-              <div class="hidden w-24 shrink-0 justify-end sm:flex"></div>
-            </div>
-
-            <%= if @loading do %>
-              <div>
-                <.skeleton
-                  :for={_ <- 1..5}
-                  class="h-12 w-full rounded-none border-b border-stone-800/60 last:border-b-0"
+          <%= if @tab != "bracket" do %>
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <.form
+                for={@filter_form}
+                id="rows-filter-form"
+                phx-change="filter"
+                class="relative w-full max-w-xs"
+              >
+                <span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3.5">
+                  <.icon name="hero-magnifying-glass" class="size-4 text-stone-600" />
+                </span>
+                <.input
+                  field={@filter_form[:filter]}
+                  type="text"
+                  placeholder={filter_placeholder(@tab)}
+                  class="h-10 w-full rounded-xl border border-stone-800 bg-stone-950 pl-10 pr-4 text-sm text-stone-200 placeholder-stone-600 outline-none transition focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
                 />
-              </div>
-            <% else %>
-              <div id="rows" phx-update="stream">
-                <div
-                  id="rows-empty"
-                  class="hidden px-6 py-10 text-center text-[15px] text-stone-400 only:block"
-                >
-                  No matching entries.
-                </div>
+              </.form>
+              <span class="shrink-0 font-mono text-[13px] text-stone-400">{@total} shown</span>
+            </div>
+          <% end %>
 
-                <div
-                  :for={{id, row} <- @streams.rows}
-                  id={id}
-                  class={row_class(@tab, row)}
-                >
-                  <div class="w-16 shrink-0 font-mono text-sm">
-                    <%= cond do %>
-                      <% @tab == "seeds" -> %>
-                        <%= if tone = seed_badge_tone(row["seed"]) do %>
-                          <.badge tone={tone} class="font-mono">
-                            {seed_badge(row["seed"])}
-                          </.badge>
-                        <% else %>
-                          <span class="text-stone-500">{seed_badge(row["seed"])}</span>
-                        <% end %>
-                      <% @tab == "standings" -> %>
-                        <span class={["font-bold", placement_class(row["placement"])]}>
-                          #{row["placement"]}
-                        </span>
-                      <% true -> %>
-                        <span class={["font-bold", placement_class(row["placement"])]}>
-                          #{row["placement"]}
-                        </span>
-                    <% end %>
+          <%= if @tab != "bracket" do %>
+            <div class="mt-4 overflow-hidden rounded-xl border border-stone-800/80">
+              <div class="flex items-center gap-4 border-b border-stone-800 bg-stone-900/60 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                <div class="w-16 shrink-0"></div>
+                <div class="flex-1">Entrant</div>
+                <div :if={@tab == "standings"} class="hidden w-28 shrink-0 justify-end sm:flex">
+                  Sets
+                </div>
+                <div :if={@tab == "standings"} class="hidden w-16 shrink-0 justify-end sm:flex">
+                  Δ
+                </div>
+                <div class="hidden w-24 shrink-0 justify-end sm:flex"></div>
+              </div>
+
+              <%= if @loading do %>
+                <div>
+                  <.skeleton
+                    :for={_ <- 1..5}
+                    class="h-12 w-full rounded-none border-b border-stone-800/60 last:border-b-0"
+                  />
+                </div>
+              <% else %>
+                <div id="rows" phx-update="stream">
+                  <div
+                    id="rows-empty"
+                    class="hidden px-6 py-10 text-center text-[15px] text-stone-400 only:block"
+                  >
+                    No matching entries.
                   </div>
-                  <div class="min-w-0 flex-1 truncate text-[15px] font-medium text-stone-200">
-                    <%= if row["player_id"] do %>
-                      <.link
-                        navigate={player_link(@game_slug, row["player_id"])}
-                        class="truncate transition-colors hover:text-lime-300"
-                      >
+
+                  <div
+                    :for={{id, row} <- @streams.rows}
+                    id={id}
+                    class={row_class(@tab, row)}
+                  >
+                    <div class="w-16 shrink-0 font-mono text-sm">
+                      <%= cond do %>
+                        <% @tab == "seeds" -> %>
+                          <%= if tone = seed_badge_tone(row["seed"]) do %>
+                            <.badge tone={tone} class="font-mono">
+                              {seed_badge(row["seed"])}
+                            </.badge>
+                          <% else %>
+                            <span class="text-stone-500">{seed_badge(row["seed"])}</span>
+                          <% end %>
+                        <% @tab == "standings" -> %>
+                          <span class={["font-bold", placement_class(row["placement"])]}>
+                            #{row["placement"]}
+                          </span>
+                        <% true -> %>
+                          <span class={["font-bold", placement_class(row["placement"])]}>
+                            #{row["placement"]}
+                          </span>
+                      <% end %>
+                    </div>
+                    <div class="min-w-0 flex-1 truncate text-[15px] font-medium text-stone-200">
+                      <%= if row["player_id"] do %>
+                        <.link
+                          navigate={player_link(@game_slug, row["player_id"])}
+                          class="truncate transition-colors hover:text-lime-300"
+                        >
+                          {row["name"]}
+                        </.link>
+                      <% else %>
                         {row["name"]}
-                      </.link>
-                    <% else %>
-                      {row["name"]}
-                    <% end %>
-                    <%= if @tab == "standings" && row["reason"] do %>
-                      <.badge tone={reason_tone(row["reason"])} class="ml-2">
-                        {reason_label(row["reason"])}
-                      </.badge>
-                    <% end %>
-                  </div>
-                  <div :if={@tab == "standings"} class="hidden w-28 shrink-0 justify-end sm:flex">
-                    <span class="font-mono text-[13px]">
-                      <span class={
-                        if(row["wins"] >= row["losses"],
-                          do: "text-emerald-400",
-                          else: "text-stone-400"
-                        )
-                      }>
-                        {row["wins"]}W
+                      <% end %>
+                      <%= if @tab == "standings" && row["reason"] do %>
+                        <.badge tone={reason_tone(row["reason"])} class="ml-2">
+                          {reason_label(row["reason"])}
+                        </.badge>
+                      <% end %>
+                    </div>
+                    <div :if={@tab == "standings"} class="hidden w-28 shrink-0 justify-end sm:flex">
+                      <span class="font-mono text-[13px]">
+                        <span class={
+                          if(row["wins"] >= row["losses"],
+                            do: "text-emerald-400",
+                            else: "text-stone-400"
+                          )
+                        }>
+                          {row["wins"]}W
+                        </span>
+                        <span class="mx-1 text-stone-600">-</span>
+                        <span class={
+                          if(row["losses"] > row["wins"], do: "text-rose-400", else: "text-stone-400")
+                        }>
+                          {row["losses"]}L
+                        </span>
+                        <span class="ml-1.5 text-stone-600">({row["games_won"]}-{row["games_lost"]})</span>
                       </span>
-                      <span class="mx-1 text-stone-600">-</span>
-                      <span class={
-                        if(row["losses"] > row["wins"], do: "text-rose-400", else: "text-stone-400")
-                      }>
-                        {row["losses"]}L
-                      </span>
-                      <span class="ml-1.5 text-stone-600">({row["games_won"]}-{row["games_lost"]})</span>
-                    </span>
-                  </div>
-                  <div :if={@tab == "standings"} class="hidden w-16 shrink-0 justify-end sm:flex">
-                    <%= if is_integer(row["seed_delta"]) do %>
-                      <span class={delta_class(row["seed_delta"])}>
-                        {if row["seed_delta"] > 0, do: "+", else: ""}{row["seed_delta"]}
-                      </span>
-                    <% else %>
-                      <span class="text-stone-600">—</span>
-                    <% end %>
-                  </div>
-                  <div class="hidden w-24 shrink-0 justify-end sm:flex">
-                    <%= if @tab == "results" && top8?(row["placement"]) do %>
-                      <.badge tone={top8_tone(row["placement"])}>Top 8</.badge>
-                    <% end %>
+                    </div>
+                    <div :if={@tab == "standings"} class="hidden w-16 shrink-0 justify-end sm:flex">
+                      <%= if is_integer(row["seed_delta"]) do %>
+                        <span class={delta_class(row["seed_delta"])}>
+                          {if row["seed_delta"] > 0, do: "+", else: ""}{row["seed_delta"]}
+                        </span>
+                      <% else %>
+                        <span class="text-stone-600">—</span>
+                      <% end %>
+                    </div>
+                    <div class="hidden w-24 shrink-0 justify-end sm:flex">
+                      <%= if @tab == "results" && top8?(row["placement"]) do %>
+                        <.badge tone={top8_tone(row["placement"])}>Top 8</.badge>
+                      <% end %>
+                    </div>
                   </div>
                 </div>
-              </div>
-            <% end %>
-          </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if @tab == "bracket" do %>
+            <div id="bracket-view" class="mt-6">
+              <%= cond do %>
+                <% @loading -> %>
+                  <div class="grid gap-4 md:grid-cols-4">
+                    <.skeleton :for={_ <- 1..8} class="h-24 w-full rounded-xl" />
+                  </div>
+                <% @groups == [] -> %>
+                  <.empty_state
+                    icon="hero-squares-2x2"
+                    title="No bracket data yet"
+                  >
+                    <:body>
+                      Sets will appear here once the bracket is generated on start.gg.
+                    </:body>
+                  </.empty_state>
+                <% true -> %>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button
+                      :for={group <- @groups}
+                      type="button"
+                      phx-click="select-group"
+                      phx-value-group-id={group["id"]}
+                      id={"group-chip-#{group["id"]}"}
+                      class={[
+                        "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                        group["id"] == @selected_group &&
+                          "bg-lime-400 text-stone-950 hover:bg-lime-300",
+                        group["id"] != @selected_group &&
+                          "border border-stone-800 bg-stone-900/60 text-stone-300 hover:border-stone-700 hover:text-stone-100"
+                      ]}
+                    >
+                      {group["label"]}
+                      <span class="ml-1 font-mono text-xs opacity-70">
+                        ({group["set_count"]})
+                      </span>
+                    </button>
+                  </div>
+
+                  <% selected = find_group(@groups, @selected_group) %>
+                  <%= if selected do %>
+                    <%= if @focus_run do %>
+                      <div
+                        id="focus-run"
+                        class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-lime-400/30 bg-lime-400/5 px-4 py-3"
+                      >
+                        <span class="text-sm font-semibold text-stone-100">
+                          {@focus_run.name}'s run
+                        </span>
+                        <span class="flex items-center gap-1">
+                          <span
+                            :for={entry <- @focus_run.entries}
+                            class={[
+                              "rounded-md px-2 py-0.5 font-mono text-xs",
+                              entry["result"] == "W" && "bg-emerald-400/15 text-emerald-300",
+                              entry["result"] != "W" && "bg-rose-400/15 text-rose-300"
+                            ]}
+                          >
+                            {entry["result"]} vs {entry["opponent"] || "—"}
+                          </span>
+                        </span>
+                        <%= if @focus_run.eliminator do %>
+                          <span class="text-sm text-stone-400">
+                            eliminated by
+                            <span class="font-medium text-stone-200">{@focus_run.eliminator}</span>
+                          </span>
+                        <% else %>
+                          <.badge tone="accent">still alive / winner</.badge>
+                        <% end %>
+                        <button
+                          type="button"
+                          phx-click="focus-player"
+                          phx-value-entrant-id={@focus_run.entrant_id}
+                          class="ml-auto text-stone-500 transition-colors hover:text-stone-200"
+                        >
+                          <.icon name="hero-x-mark" class="size-4" />
+                        </button>
+                      </div>
+                    <% else %>
+                      <p class="mt-3 text-[13px] text-stone-500">
+                        Click a player in the bracket to trace their path through it.
+                      </p>
+                    <% end %>
+
+                    <div class="mt-4 overflow-x-auto rounded-xl border border-stone-800/80 bg-stone-900/30">
+                      <div class="flex min-w-max gap-5 p-4">
+                        <div
+                          :for={round <- selected["winners_rounds"]}
+                          class="w-56 shrink-0 space-y-2"
+                        >
+                          <div class="px-1 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                            {round["name"]}
+                          </div>
+                          <.bracket_match
+                            :for={set <- round["sets"]}
+                            set={set}
+                            focus_ids={(@focus_run && @focus_run.ids) || MapSet.new()}
+                          />
+                        </div>
+
+                        <%= if selected["losers_rounds"] != [] do %>
+                          <div class="w-px shrink-0 self-stretch bg-stone-800"></div>
+                          <div
+                            :for={round <- selected["losers_rounds"]}
+                            class="w-56 shrink-0 space-y-2 opacity-90"
+                          >
+                            <div class="px-1 text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+                              {round["name"]}
+                            </div>
+                            <.bracket_match
+                              :for={set <- round["sets"]}
+                              set={set}
+                              focus_ids={(@focus_run && @focus_run.ids) || MapSet.new()}
+                            />
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+              <% end %>
+            </div>
+          <% end %>
 
           <%= if @tab == "standings" && @recap do %>
             <div class="mt-6 grid gap-4 md:grid-cols-3">
