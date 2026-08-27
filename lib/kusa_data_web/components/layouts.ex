@@ -29,8 +29,6 @@ defmodule KusaDataWeb.Layouts do
           <nav class="hidden flex-1 items-center justify-center gap-1 md:flex">
             <.nav_link to={~p"/"} active={@nav == :tournaments}>Tournaments</.nav_link>
             <.nav_link to={~p"/atlas"} active={@nav == :atlas}>Atlas</.nav_link>
-            <.nav_link to={~p"/rankings"} active={@nav == :rankings}>Rankings</.nav_link>
-            <.nav_link to={~p"/players/compare"} active={@nav == :players}>Players</.nav_link>
             <%= if @current_user do %>
               <.nav_link to={~p"/your-tournaments"} active={@nav == :your}>Saved</.nav_link>
               <.nav_link to={~p"/leagues"} active={@nav == :leagues}>Leagues</.nav_link>
@@ -94,8 +92,6 @@ defmodule KusaDataWeb.Layouts do
           <nav class="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-8">
             <.nav_link to={~p"/"} active={@nav == :tournaments} mobile>Tournaments</.nav_link>
             <.nav_link to={~p"/atlas"} active={@nav == :atlas} mobile>Atlas</.nav_link>
-            <.nav_link to={~p"/rankings"} active={@nav == :rankings} mobile>Rankings</.nav_link>
-            <.nav_link to={~p"/players/compare"} active={@nav == :players} mobile>Players</.nav_link>
             <%= if @current_user do %>
               <.nav_link to={~p"/your-tournaments"} active={@nav == :your} mobile>Saved</.nav_link>
               <.nav_link to={~p"/leagues"} active={@nav == :leagues} mobile>Leagues</.nav_link>
