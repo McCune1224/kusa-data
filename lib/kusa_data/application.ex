@@ -53,8 +53,27 @@ defmodule KusaData.Application do
 
   defp redis_child do
     case Application.get_env(:kusa_data, KusaData.Cache, []) |> Keyword.get(:url) do
-      nil -> []
-      url -> [KusaData.Redis.child_spec(url)]
+      nil ->
+        []
+
+      "" ->
+        []
+
+      url when is_binary(url) ->
+        if String.starts_with?(url, "redis://") or String.starts_with?(url, "rediss://") do
+          [KusaData.Redis.child_spec(url)]
+        else
+          require Logger
+
+          Logger.warning(
+            "REDIS_URL is set but not a redis:// URL, running without cache: #{inspect(url)}"
+          )
+
+          []
+        end
+
+      _ ->
+        []
     end
   end
 

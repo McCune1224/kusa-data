@@ -40,6 +40,7 @@ defmodule KusaData.Redis do
 
   defp put_database(opts, path) when path in [nil, "", "/"], do: opts
   defp put_database(opts, "/" <> db), do: Keyword.put(opts, :database, db)
+  defp put_database(opts, _path), do: opts
 
   @spec command(list()) :: {:ok, term()} | {:error, term()}
   def command(commands) do
