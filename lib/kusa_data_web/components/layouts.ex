@@ -15,10 +15,10 @@ defmodule KusaDataWeb.Layouts do
   def app(assigns) do
     ~H"""
     <div class="flex min-h-screen flex-col bg-canvas text-ink">
-      <header class="sticky top-0 z-40 border-b border-line bg-canvas">
+      <header class="sticky top-0 z-40 border-b-2 border-line bg-canvas">
         <div class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6">
           <a href="/" class="group flex shrink-0 items-center gap-2.5 text-ink">
-            <span class="flex size-9 items-center justify-center rounded-full bg-accent font-display text-lg font-bold text-accent-ink transition-transform group-hover:-rotate-3">
+            <span class="flex size-9 items-center justify-center rounded-none border border-accent bg-accent font-display text-lg font-bold text-accent-ink">
               K
             </span>
             <span class="font-display text-[17px] font-semibold tracking-tight">
@@ -59,7 +59,7 @@ defmodule KusaDataWeb.Layouts do
             <% else %>
               <.link
                 navigate={~p"/auth?mode=login"}
-                class="rounded-card bg-accent px-4 py-1.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+                class="rounded-none border border-accent bg-accent px-4 py-1.5 text-sm font-semibold text-accent-ink transition-colors hover:border-accent-strong hover:bg-accent-strong"
               >
                 Log in
               </.link>
@@ -70,7 +70,7 @@ defmodule KusaDataWeb.Layouts do
             type="button"
             phx-click={JS.toggle(to: "#mobile-nav")}
             aria-label="Toggle navigation"
-            class="-mr-2 inline-flex size-10 items-center justify-center rounded-full border border-line text-ink transition-colors hover:border-accent-line md:hidden"
+            class="-mr-2 inline-flex size-10 items-center justify-center rounded-none border border-line text-ink transition-colors hover:border-accent-line md:hidden"
           >
             <span class="hero-bars-3 size-5"></span>
           </button>
@@ -79,14 +79,14 @@ defmodule KusaDataWeb.Layouts do
         <div id="mobile-nav" hidden class="fixed inset-0 z-50 flex flex-col bg-canvas md:hidden">
           <div class="flex h-16 items-center justify-between border-b border-line px-4">
             <a href="/" class="flex items-center gap-2.5">
-              <span class="flex size-9 items-center justify-center rounded-full bg-accent font-display text-lg font-bold text-accent-ink">K</span>
+              <span class="flex size-9 items-center justify-center rounded-none bg-accent font-display text-lg font-bold text-accent-ink">K</span>
               <span class="font-display text-[17px] font-semibold tracking-tight text-ink">Kusa<span class="text-accent">Data</span></span>
             </a>
             <button
               type="button"
               phx-click={JS.toggle(to: "#mobile-nav")}
               aria-label="Close navigation"
-              class="inline-flex size-10 items-center justify-center rounded-full border border-line text-ink"
+              class="inline-flex size-10 items-center justify-center rounded-none border border-line text-ink"
             >
               <span class="hero-x-mark size-6"></span>
             </button>
@@ -105,7 +105,7 @@ defmodule KusaDataWeb.Layouts do
                 <span class="truncate text-sm text-muted">{@current_user.email}</span>
                 <.link
                   navigate={~p"/settings"}
-                  class="rounded-card border border-line px-4 py-3 text-center text-sm font-semibold text-ink"
+                  class="rounded-none border border-line px-4 py-3 text-center text-sm font-semibold text-ink"
                 >
                   Settings
                 </.link>
@@ -114,7 +114,7 @@ defmodule KusaDataWeb.Layouts do
                   <input type="hidden" name="_method" value="delete" />
                   <button
                     type="submit"
-                    class="w-full rounded-card border border-danger/40 px-4 py-3 text-sm font-semibold text-danger"
+                    class="w-full rounded-none border border-danger/40 px-4 py-3 text-sm font-semibold text-danger"
                   >
                     Log out
                   </button>
@@ -122,7 +122,7 @@ defmodule KusaDataWeb.Layouts do
               <% else %>
                 <.link
                   navigate={~p"/auth?mode=login"}
-                  class="rounded-card bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-ink"
+                  class="rounded-none border border-accent bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-ink"
                 >
                   Log in
                 </.link>
@@ -174,10 +174,10 @@ defmodule KusaDataWeb.Layouts do
             "border-l-2 border-transparent pl-5 text-2xl font-semibold text-muted hover:border-accent-line hover:text-ink"
 
           assigns.active ->
-            "border-b-2 border-accent pb-1 text-sm font-semibold text-ink"
+            "border border-accent bg-accent-soft px-2 py-1 text-sm font-semibold text-ink"
 
           true ->
-            "border-b-2 border-transparent pb-1 text-sm font-medium text-muted transition-colors hover:border-accent-line hover:text-ink"
+            "border border-transparent px-2 py-1 text-sm font-medium text-muted transition-colors hover:border-line hover:text-ink"
         end
       )
 

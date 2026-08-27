@@ -37,9 +37,9 @@ defmodule KusaDataWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_user={@current_user} nav={:tournaments}>
-      <section class="desk-grid relative overflow-hidden rounded-card border border-line bg-surface px-6 py-14 sm:px-10 sm:py-20">
+      <section class="desk-grid relative overflow-hidden rounded-none border border-line bg-surface px-6 py-14 sm:px-10 sm:py-20">
         <div class="relative mx-auto max-w-2xl text-center">
-          <span class="inline-flex items-center gap-2 rounded-pill border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
+          <span class="inline-flex items-center gap-2 rounded-none border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
             <span class="hero-bolt size-3.5"></span> Melee tournament directory
           </span>
           <h1 class="mt-5 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
@@ -55,9 +55,9 @@ defmodule KusaDataWeb.HomeLive do
               value={@query}
               placeholder="Search by name, city, or venue…"
               aria-label="Search tournaments"
-              class="w-full rounded-pill border border-line bg-canvas px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-accent-line focus:outline-none focus:ring-2 focus:ring-accent/20"
+              class="w-full rounded-none border border-line bg-canvas px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-accent-line focus:outline-none focus:ring-2 focus:ring-accent/20"
             />
-            <.button type="submit" class="shrink-0 !rounded-pill">Search</.button>
+            <.button type="submit" class="shrink-0 !rounded-none">Search</.button>
           </form>
         </div>
       </section>

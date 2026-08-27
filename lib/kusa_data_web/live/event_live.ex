@@ -160,7 +160,7 @@ defmodule KusaDataWeb.EventLive do
     <Layouts.app flash={@flash} current_user={@current_user} nav={:tournaments}>
       <div id={@root_id} class="flex flex-col gap-8">
         <%= if @event do %>
-          <section class="rounded-card border border-line bg-surface p-6 sm:p-8">
+          <section class="rounded-none border border-line bg-surface p-6 sm:p-8">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div class="flex flex-col gap-2">
                 <h1 class="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
@@ -182,7 +182,7 @@ defmodule KusaDataWeb.EventLive do
               <%= if @tournament_path do %>
                 <.link
                   navigate={@tournament_path}
-                  class="shrink-0 rounded-card border border-line bg-surface-2 px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-accent-line hover:text-accent"
+                  class="shrink-0 rounded-none border border-line bg-surface-2 px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-accent-line hover:text-accent"
                 >
                   ← {@tournament_name || "Tournament"}
                 </.link>
@@ -200,7 +200,7 @@ defmodule KusaDataWeb.EventLive do
             <h2 class="font-display text-xl font-semibold text-ink">Final standings</h2>
             <%= if Enum.empty?(@standings) do %>
               <.empty
-                class="rounded-card border border-line bg-surface"
+                class="rounded-none border border-line bg-surface"
                 icon="hero-trophy"
                 title="No standings yet"
                 description="Results will appear here once the bracket is posted."
@@ -241,7 +241,7 @@ defmodule KusaDataWeb.EventLive do
           </section>
         <% else %>
           <.empty
-            class="rounded-card border border-line bg-surface"
+            class="rounded-none border border-line bg-surface"
             icon="hero-x-circle"
             title="Event not found"
             description="We couldn't load this event. Check the link and try again."

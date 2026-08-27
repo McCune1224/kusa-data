@@ -77,7 +77,7 @@ defmodule KusaDataWeb.PlayerH2HLive do
     <Layouts.app flash={@flash} current_user={@current_user} nav={:players}>
       <div id={player_h2h_id(@player_id)} class="mx-auto flex max-w-3xl flex-col gap-8">
         <header class="flex flex-col gap-1">
-          <span class="inline-flex w-fit items-center gap-2 rounded-pill border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
+          <span class="inline-flex w-fit items-center gap-2 rounded-none border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
             <span class="hero-squares-2x2 size-3.5"></span> Head-to-head
           </span>
           <h1 class="mt-3 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
@@ -114,7 +114,7 @@ defmodule KusaDataWeb.PlayerH2HLive do
         </.card>
 
         <%= if @error do %>
-          <div class="rounded-card border border-danger/50 bg-danger-soft px-4 py-3 text-sm text-danger">
+          <div class="rounded-none border border-danger/50 bg-danger-soft px-4 py-3 text-sm text-danger">
             {@error}
           </div>
         <% end %>
@@ -140,7 +140,7 @@ defmodule KusaDataWeb.PlayerH2HLive do
               />
             </div>
 
-            <div class="rounded-card border border-line bg-surface px-5 py-4 text-sm">
+            <div class="rounded-none border border-line bg-surface px-5 py-4 text-sm">
               <p class="flex flex-wrap items-center gap-2 text-muted">
                 <span class="font-semibold text-ink">Player #{@player_id}</span>
                 <span class="text-faint">{@h2h["player_a_wins"]} – {@h2h["player_b_wins"]}</span>

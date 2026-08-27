@@ -54,17 +54,17 @@ defmodule KusaDataWeb.PlayerLive do
     <Layouts.app flash={@flash} current_user={@current_user} nav={:players}>
       <div id={"player-#{@player_id}"} class="space-y-8">
         <%!-- Identity header --%>
-        <section class="rounded-card border border-line bg-surface px-6 py-8">
+        <section class="rounded-none border border-line bg-surface px-6 py-8">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-4">
               <%= if @player["avatar_url"] do %>
                 <img
                   src={@player["avatar_url"]}
                   alt={@player["gamer_tag"] || "Player"}
-                  class="size-16 rounded-card border border-line object-cover"
+                  class="size-16 rounded-none border border-line object-cover"
                 />
               <% else %>
-                <div class="flex size-16 items-center justify-center rounded-card border border-line bg-surface-2 font-display text-2xl font-bold text-accent">
+                <div class="flex size-16 items-center justify-center rounded-none border border-line bg-surface-2 font-display text-2xl font-bold text-accent">
                   {String.first(@player["gamer_tag"] || "P")}
                 </div>
               <% end %>
@@ -104,19 +104,19 @@ defmodule KusaDataWeb.PlayerLive do
         <section class="flex flex-wrap gap-3">
           <.link
             navigate={~p"/player/#{@player_id}/history"}
-            class="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent-line hover:text-accent"
+            class="rounded-none border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent-line hover:text-accent"
           >
             Set history
           </.link>
           <.link
             navigate={~p"/player/#{@player_id}/trend"}
-            class="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent-line hover:text-accent"
+            class="rounded-none border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent-line hover:text-accent"
           >
             Trend
           </.link>
           <.link
             navigate={~p"/player/#{@player_id}/h2h"}
-            class="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent-line hover:text-accent"
+            class="rounded-none border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent-line hover:text-accent"
           >
             Head-to-head
           </.link>

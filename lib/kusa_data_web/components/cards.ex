@@ -40,7 +40,7 @@ defmodule KusaDataWeb.Components do
       id={"tournament-#{@slug}"}
       navigate={~p"/tournament/#{@slug}"}
       class={[
-        "group flex flex-col gap-3 rounded-card border border-line bg-surface p-5",
+        "group flex flex-col gap-3 rounded-none border border-line bg-surface p-5",
         "transition-all duration-150 hover:border-accent-line hover:bg-surface-2",
         @class
       ]}

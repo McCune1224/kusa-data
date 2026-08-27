@@ -14,16 +14,17 @@
 @custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
 
 /* ----------------------------------------------------------------
-   Refined dark design tokens
-   Single restrained accent: emerald. Calm near-black canvas.
+   Blocky professional tokens
+   Square corners, hard 1px rules, dense grid, no softness.
 ----------------------------------------------------------------- */
 @theme {
   --color-canvas: #0a0b0d;
   --color-surface: #121419;
   --color-surface-2: #181b21;
   --color-surface-3: #1f232b;
-  --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-2: rgba(255, 255, 255, 0.14);
+  --color-line: rgba(255, 255, 255, 0.10);
+  --color-line-2: rgba(255, 255, 255, 0.18);
+  --color-line-strong: rgba(255, 255, 255, 0.22);
   --color-ink: #eef0f4;
   --color-muted: #9aa0ad;
   --color-faint: #6b7280;
@@ -39,8 +40,9 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 14px;
-  --radius-pill: 9999px;
+  --radius-card: 0px;
+  --radius-pill: 0px;
+  --radius-none: 0;
 
   --animate-fade-up: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -90,19 +92,29 @@ body {
   display: contents;
 }
 
-/* Subtle ambient grid for hero/empty canvases */
+/* Hard 8px grid — blocky, industrial, no soft blur */
 .desk-grid {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 56px 56px;
-  background-position: center top;
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: top left;
+}
+.block-rule {
+  border-top: 1px solid var(--color-line-strong);
+}
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-/* Hairline divider that fades at both ends */
+/* Hairline divider — hard 1px solid, no blur */
 .hairline {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-line-2), transparent);
+  background: var(--color-line-2);
+  border-top: 1px solid var(--color-line);
 }
 
 /* Skeleton shimmer for loading states */
@@ -127,7 +139,7 @@ body {
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--color-surface); }
-::-webkit-scrollbar-thumb { background: var(--color-line-2); border-radius: 9999px; }
+::-webkit-scrollbar-thumb { background: var(--color-line-2); border-radius: 0; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
 
 /* Respect reduced motion */

@@ -62,7 +62,7 @@ defmodule KusaDataWeb.TournamentLive do
             description="We couldn’t find that tournament. It may have been removed or the link is incorrect."
           />
         <% else %>
-          <section class="rounded-card border border-line bg-surface px-6 py-8 sm:px-10 sm:py-10">
+          <section class="rounded-none border border-line bg-surface px-6 py-8 sm:px-10 sm:py-10">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div class="min-w-0">
                 <h1 class="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
@@ -115,7 +115,7 @@ defmodule KusaDataWeb.TournamentLive do
                     id={"event-#{event["id"]}"}
                     navigate={~p"/event/#{event["id"]}"}
                     class={[
-                      "group flex flex-col gap-3 rounded-card border border-line bg-surface p-5",
+                      "group flex flex-col gap-3 rounded-none border border-line bg-surface p-5",
                       "transition-all duration-150 hover:border-accent-line hover:bg-surface-2"
                     ]}
                   >

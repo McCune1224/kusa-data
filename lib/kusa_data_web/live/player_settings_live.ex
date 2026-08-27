@@ -81,7 +81,7 @@ defmodule KusaDataWeb.PlayerSettingsLive do
           </.form>
 
           <%= if @confirm_link do %>
-            <div class="mt-4 rounded-card border border-accent-line bg-accent-soft px-4 py-3 text-sm text-ink">
+            <div class="mt-4 rounded-none border border-accent-line bg-accent-soft px-4 py-3 text-sm text-ink">
               <p>
                 You already have a linked player. Linking to
                 <span class="font-semibold">#{@confirm_link}</span>
@@ -98,7 +98,7 @@ defmodule KusaDataWeb.PlayerSettingsLive do
                 <button
                   type="button"
                   phx-click="cancel_link"
-                  class="rounded-card px-3 py-1.5 text-sm font-semibold text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                  class="rounded-none px-3 py-1.5 text-sm font-semibold text-muted transition-colors hover:bg-surface-2 hover:text-ink"
                 >
                   Cancel
                 </button>
@@ -116,7 +116,7 @@ defmodule KusaDataWeb.PlayerSettingsLive do
             <button
               type="button"
               phx-click="merge_duplicates"
-              class="inline-flex items-center gap-2 rounded-card border border-line-2 bg-surface-2 px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-accent-line hover:text-accent"
+              class="inline-flex items-center gap-2 rounded-none border border-line-2 bg-surface-2 px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-accent-line hover:text-accent"
             >
               <.icon name="hero-arrow-path" class="size-4" /> Merge duplicates
             </button>
@@ -150,7 +150,7 @@ defmodule KusaDataWeb.PlayerSettingsLive do
                           phx-click="remove_alias"
                           phx-value-id={to_string(alias_row.id)}
                           aria-label={"Remove " <> alias_row.alias}
-                          class="inline-flex size-9 items-center justify-center rounded-card border border-line bg-surface-2 text-muted transition-colors hover:border-danger/40 hover:text-danger"
+                          class="inline-flex size-9 items-center justify-center rounded-none border border-line bg-surface-2 text-muted transition-colors hover:border-danger/40 hover:text-danger"
                         >
                           <.icon name="hero-x-mark" class="size-4" />
                         </button>

@@ -30,7 +30,7 @@ defmodule KusaDataWeb.LeaguesLive do
           </p>
         </header>
 
-        <section class="rounded-card border border-line bg-surface p-5 sm:p-6">
+        <section class="rounded-none border border-line bg-surface p-5 sm:p-6">
           <h2 class="font-display text-lg font-semibold text-ink">Create league</h2>
           <.form
             for={@form}
@@ -50,7 +50,7 @@ defmodule KusaDataWeb.LeaguesLive do
 
         <%= if Enum.empty?(@leagues) do %>
           <.empty
-            class="rounded-card border border-line bg-surface"
+            class="rounded-none border border-line bg-surface"
             icon="hero-user-group"
             title="No leagues yet"
             description="Create your first league above to start organizing tournaments and seasons."
@@ -60,7 +60,7 @@ defmodule KusaDataWeb.LeaguesLive do
             <%= for league <- @leagues do %>
               <.link
                 navigate={~p"/leagues/#{league.id}"}
-                class="group flex flex-col gap-2 rounded-card border border-line bg-surface p-5 transition-colors hover:border-accent-line hover:bg-surface-2"
+                class="group flex flex-col gap-2 rounded-none border border-line bg-surface p-5 transition-colors hover:border-accent-line hover:bg-surface-2"
               >
                 <span class="font-display text-lg font-semibold text-ink transition-colors group-hover:text-accent">
                   {league.name}

@@ -154,7 +154,7 @@ defmodule KusaDataWeb.LeagueLive do
                   <.link
                     id={"member-#{member.player_id}"}
                     navigate={~p"/player/#{member.player_id}"}
-                    class="flex items-center justify-between gap-3 rounded-card border border-line bg-surface px-4 py-3 transition-colors hover:border-accent-line hover:bg-surface-2"
+                    class="flex items-center justify-between gap-3 rounded-none border border-line bg-surface px-4 py-3 transition-colors hover:border-accent-line hover:bg-surface-2"
                   >
                     <span class="font-medium text-ink">{member.canonical_tag ||
                       "Player #{member.player_id}"}</span>
@@ -180,7 +180,7 @@ defmodule KusaDataWeb.LeagueLive do
                   <.link
                     id={"league-tournament-#{t.tournament_id}"}
                     navigate={~p"/tournament/#{Format.bare_slug(t.tournament_slug)}"}
-                    class="flex items-center justify-between gap-3 rounded-card border border-line bg-surface px-4 py-3 transition-colors hover:border-accent-line hover:bg-surface-2"
+                    class="flex items-center justify-between gap-3 rounded-none border border-line bg-surface px-4 py-3 transition-colors hover:border-accent-line hover:bg-surface-2"
                   >
                     <span class="font-medium text-ink">{Format.bare_slug(t.tournament_slug)}</span>
                     <.icon name="hero-arrow-right" class="size-4 text-faint" />
@@ -235,7 +235,7 @@ defmodule KusaDataWeb.LeagueLive do
             <% end %>
           </section>
 
-          <section class="rounded-card border border-line bg-surface p-6">
+          <section class="rounded-none border border-line bg-surface p-6">
             <h2 class="font-display text-lg font-semibold text-ink">Import tournament</h2>
             <p class="mt-1 text-sm text-muted">Add a start.gg tournament to this league by slug.</p>
             <.form

@@ -71,7 +71,7 @@ defmodule KusaDataWeb.RankingsLive do
     <Layouts.app flash={@flash} current_user={@current_user} nav={:rankings}>
       <div id="rankings-live" class="flex flex-col gap-8">
         <header class="flex flex-col gap-3">
-          <span class="inline-flex w-fit items-center gap-2 rounded-pill border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
+          <span class="inline-flex w-fit items-center gap-2 rounded-none border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
             <span class="hero-trophy size-3.5"></span> Power rankings
           </span>
           <h1 class="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">

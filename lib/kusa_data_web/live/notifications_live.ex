@@ -70,7 +70,7 @@ defmodule KusaDataWeb.NotificationsLive do
         <% else %>
           <ul class="mt-6 space-y-3">
             <%= for n <- @notifications do %>
-              <li class="flex items-start justify-between gap-4 rounded-card border border-line bg-surface px-5 py-4 transition-colors hover:border-accent-line">
+              <li class="flex items-start justify-between gap-4 rounded-none border border-line bg-surface px-5 py-4 transition-colors hover:border-accent-line">
                 <div class="min-w-0">
                   <div class="flex items-center gap-2">
                     <h3 class="truncate font-semibold text-ink">{notification_title(n)}</h3>

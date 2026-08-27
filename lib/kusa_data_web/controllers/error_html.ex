@@ -20,7 +20,7 @@ defmodule KusaDataWeb.ErrorHTML do
         </p>
         <.link
           navigate={~p"/"}
-          class="rounded-card bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+          class="rounded-none border border-accent bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:border-accent-strong hover:bg-accent-strong"
         >
           Home
         </.link>
@@ -42,7 +42,7 @@ defmodule KusaDataWeb.ErrorHTML do
         </p>
         <.link
           navigate={~p"/"}
-          class="rounded-card bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+          class="rounded-none border border-accent bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:border-accent-strong hover:bg-accent-strong"
         >
           Home
         </.link>
@@ -64,7 +64,7 @@ defmodule KusaDataWeb.ErrorHTML do
         </p>
         <.link
           navigate={~p"/"}
-          class="rounded-card bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+          class="rounded-none border border-accent bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:border-accent-strong hover:bg-accent-strong"
         >
           Home
         </.link>

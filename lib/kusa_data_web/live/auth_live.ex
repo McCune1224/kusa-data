@@ -40,7 +40,7 @@ defmodule KusaDataWeb.AuthLive do
         </div>
 
         <%= if @current_user do %>
-          <div class="mb-6 flex items-center gap-3 rounded-card border border-accent-line bg-accent-soft px-4 py-3 text-sm text-accent">
+          <div class="mb-6 flex items-center gap-3 rounded-none border border-accent-line bg-accent-soft px-4 py-3 text-sm text-accent">
             <span class="hero-check-circle size-5 shrink-0"></span>
             <span>
               You are signed in as <span class="font-semibold"><%= @current_user.email %></span>.
@@ -48,11 +48,11 @@ defmodule KusaDataWeb.AuthLive do
           </div>
         <% end %>
 
-        <div class="mb-6 grid grid-cols-2 gap-2 rounded-card border border-line bg-surface p-1">
+        <div class="mb-6 grid grid-cols-2 gap-2 rounded-none border border-line bg-surface p-1">
           <.link
             navigate={~p"/auth?mode=login"}
             class={[
-              "rounded-[10px] py-2 text-center text-sm font-semibold transition-colors",
+              "rounded-none py-2 text-center text-sm font-semibold transition-colors",
               @mode == :login && "bg-surface-2 text-ink",
               @mode != :login && "text-muted hover:text-ink"
             ]}
@@ -62,7 +62,7 @@ defmodule KusaDataWeb.AuthLive do
           <.link
             navigate={~p"/auth?mode=register"}
             class={[
-              "rounded-[10px] py-2 text-center text-sm font-semibold transition-colors",
+              "rounded-none py-2 text-center text-sm font-semibold transition-colors",
               @mode == :register && "bg-surface-2 text-ink",
               @mode != :register && "text-muted hover:text-ink"
             ]}
@@ -72,7 +72,7 @@ defmodule KusaDataWeb.AuthLive do
         </div>
 
         <%= if @mode == :login do %>
-          <div class="rounded-card border border-line bg-surface p-6">
+          <div class="rounded-none border border-line bg-surface p-6">
             <h2 class="mb-4 font-display text-lg font-semibold text-ink">Log in</h2>
             <form method="post" action={~p"/log-in"}>
               <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
@@ -100,7 +100,7 @@ defmodule KusaDataWeb.AuthLive do
             </form>
           </div>
         <% else %>
-          <div class="rounded-card border border-line bg-surface p-6">
+          <div class="rounded-none border border-line bg-surface p-6">
             <h2 class="mb-4 font-display text-lg font-semibold text-ink">
               Create your account
             </h2>

@@ -61,7 +61,7 @@ defmodule KusaDataWeb.GameLive do
     <Layouts.app flash={@flash} current_user={@current_user} nav={:tournaments}>
       <div id={"game-#{@slug}"} class="flex flex-col gap-8">
         <%= if @game do %>
-          <section class="rounded-card border border-line bg-surface px-6 py-8 sm:px-8">
+          <section class="rounded-none border border-line bg-surface px-6 py-8 sm:px-8">
             <div class="flex flex-wrap items-center gap-3">
               <h1 class="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
                 {@game.name}
@@ -75,7 +75,7 @@ defmodule KusaDataWeb.GameLive do
 
           <%= if Enum.empty?(@tournaments) do %>
             <.empty
-              class="rounded-card border border-line bg-surface"
+              class="rounded-none border border-line bg-surface"
               icon="hero-calendar"
               title="No tournaments found"
               description={"We couldn't find any upcoming tournaments for #{@game.name} right now."}
@@ -88,7 +88,7 @@ defmodule KusaDataWeb.GameLive do
             </div>
           <% end %>
         <% else %>
-          <section class="rounded-card border border-line bg-surface px-6 py-8 sm:px-8">
+          <section class="rounded-none border border-line bg-surface px-6 py-8 sm:px-8">
             <h1 class="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
               Browse by game
             </h1>
@@ -103,7 +103,7 @@ defmodule KusaDataWeb.GameLive do
                 id={"game-pick-#{g.slug}"}
                 navigate={~p"/game/#{g.slug}"}
                 class={[
-                  "group flex items-center justify-between gap-4 rounded-card border border-line bg-surface p-5",
+                  "group flex items-center justify-between gap-4 rounded-none border border-line bg-surface p-5",
                   "transition-all duration-150 hover:border-accent-line hover:bg-surface-2"
                 ]}
               >

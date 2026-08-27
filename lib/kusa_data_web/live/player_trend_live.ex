@@ -122,9 +122,9 @@ defmodule KusaDataWeb.PlayerTrendLive do
                     <td class="px-4 py-3 text-muted">{"#{bucket["wins"]}–#{bucket["losses"]}"}</td>
                     <td class="px-4 py-3">
                       <div class="flex items-center gap-3">
-                        <div class="h-2 w-32 overflow-hidden rounded-pill bg-surface-2">
+                        <div class="h-2 w-32 overflow-hidden rounded-none bg-surface-2">
                           <div
-                            class="h-full rounded-pill bg-accent transition-all"
+                            class="h-full rounded-none bg-accent transition-all"
                             style={"width: #{bucket["win_rate"] || 0}%"}
                           >
                           </div>

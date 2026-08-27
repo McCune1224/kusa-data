@@ -1,7 +1,7 @@
 defmodule KusaDataWeb.CoreComponents do
   @moduledoc """
-  Refined-dark UI primitives shared across every LiveView and controller.
-  Single restrained accent (emerald); calm near-black canvas.
+  Blocky professional UI primitives. Square corners, hard 1px borders, dense grid.
+  Single restrained accent (emerald); near-black canvas.
   """
   use Phoenix.Component
   use Gettext, backend: KusaDataWeb.Gettext
@@ -31,13 +31,13 @@ defmodule KusaDataWeb.CoreComponents do
     <button
       type={@type}
       class={[
-        "inline-flex items-center justify-center gap-2 rounded-card font-semibold tracking-tight",
-        "transition-all duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-none border font-semibold tracking-tight",
+        "transition-colors duration-150 ease-out active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50",
         @size == :sm && "px-3 py-1.5 text-sm",
         @size == :md && "px-4 py-2 text-sm",
         @size == :lg && "px-5 py-2.5 text-base",
         @variant == :primary &&
-          "bg-accent text-accent-ink shadow-sm hover:bg-accent-strong hover:shadow-[0_0_0_4px_var(--color-accent-soft)]",
+          "border-accent bg-accent text-accent-ink hover:border-accent-strong hover:bg-accent-strong",
         @variant == :secondary &&
           "border border-line-2 bg-surface-2 text-ink hover:border-accent-line hover:text-accent",
         @variant == :ghost && "text-muted hover:bg-surface-2 hover:text-ink",
@@ -68,7 +68,7 @@ defmodule KusaDataWeb.CoreComponents do
       aria-label={@label}
       title={@label}
       class={[
-        "inline-flex size-9 items-center justify-center rounded-full border border-line bg-surface-2 text-muted",
+        "inline-flex size-9 items-center justify-center rounded-none border border-line bg-surface-2 text-muted",
         "transition-colors hover:border-accent-line hover:text-accent disabled:opacity-50",
         @class
       ]}
@@ -111,7 +111,7 @@ defmodule KusaDataWeb.CoreComponents do
         placeholder={@placeholder}
         required={@required}
         class={[
-          "w-full rounded-card border bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint",
+          "w-full rounded-none border bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint",
           "transition-colors focus:outline-none focus:ring-2",
           Enum.any?(@errors) && "border-danger/60 focus:ring-danger/30",
           !Enum.any?(@errors) && "border-line focus:border-accent-line focus:ring-accent/25",
@@ -150,7 +150,7 @@ defmodule KusaDataWeb.CoreComponents do
         id={@id}
         name={@name}
         class={[
-          "w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink",
+          "w-full rounded-none border border-line bg-surface px-3 py-2 text-sm text-ink",
           "transition-colors focus:border-accent-line focus:outline-none focus:ring-2 focus:ring-accent/25",
           @class
         ]}
@@ -189,7 +189,7 @@ defmodule KusaDataWeb.CoreComponents do
         id={@id}
         name={@name}
         checked={@checked}
-        class="size-4 rounded border-line-2 bg-surface text-accent accent-accent focus:ring-2 focus:ring-accent/30"
+        class="size-4 rounded-none border-line-2 bg-surface text-accent accent-accent focus:ring-2 focus:ring-accent/30"
         {@rest}
       />
       {@label}
@@ -221,7 +221,7 @@ defmodule KusaDataWeb.CoreComponents do
     <div
       id={@id}
       class={[
-        "rounded-card border border-line bg-surface",
+        "rounded-none border border-line bg-surface",
         @class
       ]}
     >
@@ -242,12 +242,12 @@ defmodule KusaDataWeb.CoreComponents do
 
     ~H"""
     <span class={[
-      "inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-xs font-semibold",
-      @variant == :default && "bg-surface-2 text-muted",
-      @variant == :accent && "bg-accent-soft text-accent",
-      @variant == :danger && "bg-danger-soft text-danger",
-      @variant == :muted && "bg-surface-2 text-faint",
-      @variant == :outline && "border border-line-2 text-muted",
+      "inline-flex items-center gap-1 rounded-none border px-2.5 py-0.5 text-xs font-semibold",
+      @variant == :default && "border-line bg-surface-2 text-muted",
+      @variant == :accent && "border-accent-line bg-accent-soft text-accent",
+      @variant == :danger && "border-danger/30 bg-danger-soft text-danger",
+      @variant == :muted && "border-line bg-surface-2 text-faint",
+      @variant == :outline && "border-line-2 text-muted",
       @class
     ]}>
       {render_slot(@inner_block)}
@@ -289,7 +289,7 @@ defmodule KusaDataWeb.CoreComponents do
 
   def stat(assigns) do
     ~H"""
-    <div class={["rounded-card border border-line bg-surface px-4 py-3", @class]}>
+    <div class={["rounded-none border border-line bg-surface px-4 py-3", @class]}>
       <p class="text-xs font-medium uppercase tracking-[0.08em] text-muted">{@label}</p>
       <p class="mt-1 font-display text-2xl font-semibold text-ink">{@value}</p>
       <%= if @sub do %>
@@ -307,7 +307,7 @@ defmodule KusaDataWeb.CoreComponents do
 
   def table(assigns) do
     ~H"""
-    <div class={["overflow-x-auto rounded-card border border-line", @class]}>
+    <div class={["overflow-x-auto rounded-none border border-line", @class]}>
       <table class="w-full border-collapse text-sm">
         {render_slot(@inner_block)}
       </table>
@@ -334,7 +334,7 @@ defmodule KusaDataWeb.CoreComponents do
       <div
         id={@id || @flash_kind}
         class={[
-          "fixed inset-x-0 top-4 z-[60] mx-auto flex max-w-md items-start gap-3 rounded-card border px-4 py-3 shadow-lg",
+          "fixed inset-x-0 top-4 z-[60] mx-auto flex max-w-md items-start gap-3 rounded-none border px-4 py-3",
           @kind == :info && "border-accent-line bg-surface-2 text-ink",
           @kind == :error && "border-danger/50 bg-danger-soft text-ink",
           @hidden && "hidden"
