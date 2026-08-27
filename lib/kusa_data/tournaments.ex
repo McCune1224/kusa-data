@@ -326,7 +326,7 @@ defmodule KusaData.Tournaments do
 
     with {:ok, data} <-
            Client.query(
-             Queries.tournament_search(Queries.recent_filter(after_date, nil), 1, 200, nil)
+             Queries.tournament_search(Queries.recent_filter(after_date, nil), 1, 80, nil)
            ) do
       {:ok, data["tournaments"]["nodes"] || []}
     end
