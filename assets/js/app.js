@@ -29,22 +29,23 @@ import topbar from "../vendor/topbar"
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const themeStorageKey = "kusa-data-theme"
 const root = document.documentElement
+function applyTheme(theme) {
+  root.dataset.theme = theme
+  root.classList.toggle("dark", theme === "dark")
+  localStorage.setItem(themeStorageKey, theme)
+}
 const storedTheme = localStorage.getItem(themeStorageKey)
 if (storedTheme === "light" || storedTheme === "dark") {
-  root.dataset.theme = storedTheme
-  root.classList.toggle("dark", storedTheme === "dark")
+  applyTheme(storedTheme)
 } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-  root.dataset.theme = "light"
-  root.classList.remove("dark")
+  applyTheme("light")
 }
 
 document.addEventListener("click", event => {
   const toggle = event.target.closest("[data-theme-toggle]")
   if (!toggle) return
   const next = root.dataset.theme === "light" ? "dark" : "light"
-  root.dataset.theme = next
-  root.classList.toggle("dark", next === "dark")
-  localStorage.setItem(themeStorageKey, next)
+  applyTheme(next)
 })
 
 if ("serviceWorker" in navigator) {

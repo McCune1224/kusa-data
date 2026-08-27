@@ -1,95 +1,73 @@
 <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
   <div class="animate-fade-up space-y-6">
-    <span class="sr-only">Noir Bento</span>
-    <!-- Noir Bento Hero — Find your next bracket -->
-    <section class="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 lg:p-10">
-      <div class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-        <div class="min-w-0">
-          <div class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#ffcc00]">
-            <span class="size-2 rounded-full bg-[#ffcc00]"></span>
-            The competitive Melee desk — Live
-          </div>
-          <h1 class="mt-3 font-black leading-[0.9] tracking-[-0.06em] text-[#f5f3ff] text-[44px] sm:text-[56px] lg:text-[64px]">
-            Find your next<br /><span class="text-[#ffcc00]">bracket.</span>
+    <!-- Signal Board ticker tape -->
+    <div class="-mx-4 sm:-mx-6 flex items-center gap-3 border-y-2 bg-[#ffcc00] px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-[#08070b] sm:mx-0 sm:rounded-none">
+      <span class="hidden items-center gap-1.5 sm:inline-flex"><span class="size-2 animate-pulse rounded-full bg-[#08070b]"></span> LIVE</span>
+      <span class="truncate">Genesis 10 — 1,842 watching — Mango vs Zain Winner's Final live now</span>
+      <span class="ml-auto hidden items-center gap-2 sm:inline-flex"><span class="rounded bg-[#08070b] px-2 py-0.5 text-[10px] leading-none text-[#ffcc00]">2026</span> 40 regions</span>
+    </div>
+
+    <!-- Signal Board hero — ONE obvious search -->
+    <section class="rounded-none border-2 bg-[var(--surface)] p-6 sm:p-8 lg:p-10" style="border-color:var(--border)">
+      <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0 flex-1">
+          <h1 class="font-black leading-[0.85] tracking-[-0.06em] text-[44px] sm:text-[56px] lg:text-[64px]" style="color:var(--text)">
+            Find your next<br /><span style="background:var(--accent); color:var(--accent-text); padding:0 8px">bracket.</span>
           </h1>
-          <p class="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
-            Tournament discovery with graph-powered scouting. Every region, every rivalry, every run — connected.
+          <p class="mt-4 max-w-xl text-[15px] leading-relaxed" style="color:var(--muted)">
+            One search for every tournament, city, and player. The Atlas shows where scenes live.
           </p>
-          <div class="mt-5 hidden items-center gap-2 text-[11px] text-[var(--muted)] lg:flex">
-            <span class="size-2 rounded-full bg-[#ffcc00]"></span>
-            Noir Bento bento layout · Atlas.Graph preview
-          </div>
-        </div>
 
-        <div class="w-full shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4 lg:w-[360px]">
-          <.form for={@link_form} id="link-jump-form" phx-submit="link-jump" class="w-full">
-            <label
-              for="link-jump-input"
-              class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]"
-            >
-              Paste any start.gg link or slug
-            </label>
-            <div class="mt-2 flex gap-2">
-              <.input
-                id="link-jump-input"
-                field={@link_form[:link]}
-                type="text"
-                placeholder="start.gg/tournament/…"
-                autocomplete="off"
-                class="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#ffcc00]/50 focus:ring-2 focus:ring-[#ffcc00]/15"
-              />
-              <.btn
-                variant="primary"
-                type="submit"
-                icon_right="hero-arrow-right"
-                class="shrink-0 rounded-xl"
-              >
-                Open
-              </.btn>
+          <div class="mt-6 rounded-none border-2 bg-[var(--surface2)] p-3" style="border-color:var(--border)">
+            <.form for={@search_form} id="hero-search-form" phx-change="search-input" class="w-full">
+              <label for="hero-search-input" class="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em]" style="color:var(--muted)">
+                <span>Search tournaments, cities, venues, players</span>
+                <span class="hidden items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] sm:inline-flex" style="border-color:var(--border); color:var(--muted)">⌘K</span>
+              </label>
+              <div class="mt-2 flex gap-2">
+                <div class="relative flex-1">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--muted)]">
+                    <.icon name="hero-magnifying-glass" class="size-5" />
+                  </span>
+                  <.input
+                    id="hero-search-input"
+                    field={@search_form[:q]}
+                    type="text"
+                    placeholder="Try genesis, chicago, Hungrybox…"
+                    autocomplete="off"
+                    phx-debounce="300"
+                    class="h-12 w-full rounded-none border-2 bg-[var(--surface)] pl-10 pr-3 text-[15px] font-medium placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-0"
+                    style="border-color:var(--border); color:var(--text)"
+                  />
+                </div>
+                <.btn variant="primary" type="submit" class="hidden rounded-none sm:inline-flex" phx-click={JS.dispatch("hero-search-submit", to: "#hero-search-form")}>Search</.btn>
+              </div>
+            </.form>
+            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs" style="color:var(--muted)">
+              <span>Or paste a start.gg link</span>
+              <.form for={@link_form} id="link-jump-form-compact" phx-submit="link-jump" class="inline-flex gap-1">
+                <.input field={@link_form[:link]} type="text" placeholder="start.gg/tournament/…" class="h-7 w-44 rounded-none border bg-[var(--surface)] px-2 text-xs" style="border-color:var(--border)" />
+                <.btn variant="ghost" size="sm" type="submit" class="h-7 rounded-none px-2 text-xs">Open</.btn>
+              </.form>
             </div>
-          </.form>
+          </div>
+        </div>
 
-          <div
-            id="account-note"
-            class="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-3"
-          >
-            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
-              No account needed to browse
-            </p>
-            <p class="mt-1.5 text-[13px] leading-relaxed text-[var(--muted)]">
-              Everything here — search, brackets, stats, rankings — is open.
-              An optional free login only unlocks personal extras:
-              bookmark tournaments to <span class="text-[#f5f3ff]">Your tournaments</span>,
-              get pinged when watched players or events post results, build
-              leagues with your scene's standings, and keep linked tags in
-              one profile via player settings.
-            </p>
+        <div class="w-full shrink-0 lg:w-[380px] space-y-3">
+          <div class="rounded-none border-2 bg-[var(--surface2)] p-3" style="border-color:var(--border)">
+            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em]" style="color:var(--muted)">
+              <span>Live Atlas — 2026</span><span class="rounded bg-[var(--accent)] px-1.5 py-0.5 text-[9px] leading-none" style="color:var(--accent-text)">40 regions</span>
+            </div>
+            <div class="mt-2 grid grid-cols-4 gap-1.5 text-center">
+              <div class="border p-2" style="border-color:var(--border); background:var(--surface)"><div class="text-xs font-black" style="color:var(--text)">CA</div><div class="text-[10px]" style="color:var(--muted)">412</div></div>
+              <div class="border p-2" style="border-color:var(--border); background:var(--surface)"><div class="text-xs font-black" style="color:var(--text)">TX</div><div class="text-[10px]" style="color:var(--muted)">298</div></div>
+              <div class="border p-2" style="border-color:var(--border); background:var(--surface)"><div class="text-xs font-black" style="color:var(--text)">NY</div><div class="text-[10px]" style="color:var(--muted)">241</div></div>
+              <div class="border p-2" style="border-color:var(--border); background:var(--surface)"><div class="text-xs font-black" style="color:var(--text)">FL</div><div class="text-[10px]" style="color:var(--muted)">198</div></div>
+            </div>
+            <a href="/atlas" class="mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline" style="color:var(--accent-dark)">Open full Atlas →</a>
           </div>
-        </div>
-      </div>
-
-      <!-- Stats strip — 24/7, 1.2k scenes, Graph -->
-      <div class="mt-8 grid grid-cols-3 gap-3">
-        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4">
-          <div class="font-mono text-2xl font-bold text-[#f5f3ff]">24/7</div>
-          <div class="text-[11px] font-medium uppercase tracking-widest text-[var(--muted)]">
-            Bracket watch
-          </div>
-        </div>
-        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4">
-          <div class="font-mono text-2xl font-bold text-[#f5f3ff]">
-            1.2k <span class="text-sm font-normal text-[var(--muted)]">scenes</span>
-          </div>
-          <div class="text-[11px] font-medium uppercase tracking-widest text-[var(--muted)]">
-            US Atlas live
-          </div>
-        </div>
-        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4">
-          <div class="font-mono text-2xl font-bold text-[#f5f3ff]">
-            Graph <span class="text-[#ffcc00]">●</span>
-          </div>
-          <div class="text-[11px] font-medium uppercase tracking-widest text-[var(--muted)]">
-            H2H network
+          <div class="rounded-none border-2 p-3 text-xs leading-relaxed" style="border-color:var(--border); background:var(--accent); color:var(--accent-text)">
+            <span class="font-black">No account needed.</span> Search, brackets, and graphs are open. Log in only for bookmarks and leagues.
           </div>
         </div>
       </div>

@@ -17,13 +17,13 @@
 @custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
 
 :root {
-  --bg: #08070b;
-  --surface: #121116;
-  --surface2: #1a1920;
-  --border: rgba(255, 255, 255, 0.08);
-  --border2: rgba(255, 255, 255, 0.14);
-  --text: #f5f3ff;
-  --muted: #9a95b0;
+  --bg: #fdfcf8;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --border: rgba(15, 15, 15, 0.08);
+  --border2: rgba(15, 15, 15, 0.14);
+  --text: #0f0f0f;
+  --muted: #52525b;
   --accent: #ffcc00;
   --accent2: #ffd60a;
   --accent-dark: #eab308;
@@ -70,8 +70,20 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   background-color: var(--bg);
+}
+
+html.dark,
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #08070b;
+  --surface: #121116;
+  --surface2: #1a1920;
+  --border: rgba(255, 255, 255, 0.08);
+  --border2: rgba(255, 255, 255, 0.14);
+  --text: #f5f3ff;
+  --muted: #9a95b0;
 }
 
 html[data-theme="light"] {
@@ -79,7 +91,8 @@ html[data-theme="light"] {
   --bg: #fdfcf8;
   --surface: #ffffff;
   --surface2: #f0ede6;
-  --border: #0f0f0f;
+  --border: rgba(15, 15, 15, 0.08);
+  --border2: rgba(15, 15, 15, 0.14);
   --text: #0f0f0f;
   --muted: #52525b;
 }
