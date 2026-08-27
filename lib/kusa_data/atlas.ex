@@ -82,33 +82,112 @@ defmodule KusaData.Atlas do
   Region bubbles for the map, each merged with its centroid so the front-end
   can place it without any geocoding. Regions whose `{country, state}` is not
   in the centroid table are dropped (they cannot be positioned).
+
+  For the 2026 season view the map aggregates the full calendar year
+  2026-01-01 to 2026-12-31 so Atlas shows the entire season, not just the
+  last 90 days.
   """
   @spec map_data() :: [map()]
   def map_data do
-    case Tournaments.regions() do
+    case full_year_2026_regions() do
       {:ok, regions, _status} ->
-        regions
-        |> Enum.map(fn region ->
-          Map.put(region, :centroid, centroid(region["country"], region["state"]))
-        end)
-        |> Enum.reject(fn region -> region.centroid == nil end)
-        |> Enum.map(fn region ->
-          {lat, lng} = region.centroid
-
-          %{
-            "country" => region["country"],
-            "state" => region["state"],
-            "label" => region_label(region),
-            "attendees" => region["attendees"],
-            "tournaments" => region["tournaments"],
-            "lat" => lat,
-            "lng" => lng
-          }
-        end)
+        to_bubbles(regions)
 
       _ ->
-        []
+        case Tournaments.regions() do
+          {:ok, regions, _status} ->
+            regions
+            |> Enum.map(fn region ->
+              Map.put(region, :centroid, centroid(region["country"], region["state"]))
+            end)
+            |> Enum.reject(fn region -> region.centroid == nil end)
+            |> Enum.map(fn region ->
+              {lat, lng} = region.centroid
+
+              %{
+                "country" => region["country"],
+                "state" => region["state"],
+                "label" => region_label(region),
+                "attendees" => region["attendees"],
+                "tournaments" => region["tournaments"],
+                "lat" => lat,
+                "lng" => lng
+              }
+            end)
+
+          _ ->
+            []
+        end
     end
+  end
+
+  defp to_bubbles(regions) do
+    regions
+    |> Enum.map(fn region ->
+      Map.put(region, :centroid, centroid(region["country"], region["state"]))
+    end)
+    |> Enum.reject(fn region -> region.centroid == nil end)
+    |> Enum.map(fn region ->
+      {lat, lng} = region.centroid
+
+      %{
+        "country" => region["country"],
+        "state" => region["state"],
+        "label" => region_label(region),
+        "attendees" => region["attendees"],
+        "tournaments" => region["tournaments"],
+        "lat" => lat,
+        "lng" => lng
+      }
+    end)
+  end
+
+  defp full_year_2026_regions do
+    KusaData.Cache.fetch("regions:2026", 6 * 60 * 60, fn ->
+      case fetch_all_2026(1, []) do
+        {:ok, nodes} -> {:ok, build_regions(nodes)}
+        error -> error
+      end
+    end)
+  end
+
+  defp fetch_all_2026(page, acc) when page > 12 do
+    {:ok, acc}
+  end
+
+  defp fetch_all_2026(page, acc) do
+    case Tournaments.browse(%{mode: :past, from: "2026-01-01", to: "2026-12-31", page: page}) do
+      {:ok, %{"tournaments" => nodes, "total" => total}, _status} ->
+        new_acc = acc ++ (nodes || [])
+
+        cond do
+          nodes == [] -> {:ok, new_acc}
+          length(new_acc) >= total -> {:ok, new_acc}
+          true -> fetch_all_2026(page + 1, new_acc)
+        end
+
+      {:error, _} = error ->
+        if acc == [] do
+          error
+        else
+          {:ok, acc}
+        end
+    end
+  end
+
+  defp build_regions(nodes) do
+    nodes
+    |> Enum.group_by(fn node -> {node["countryCode"], node["addrState"]} end)
+    |> Enum.map(fn {{country, state}, entries} ->
+      %{
+        "country" => country,
+        "state" => state,
+        "tournaments" => length(entries),
+        "attendees" => Enum.reduce(entries, 0, fn e, acc -> acc + (e["numAttendees"] || 0) end)
+      }
+    end)
+    |> Enum.reject(&is_nil(&1["country"]))
+    |> Enum.sort_by(fn entry -> {entry["attendees"], entry["country"], entry["state"]} end, :desc)
   end
 
   defp region_label(%{"state" => state}) when is_binary(state) and state != "", do: state
