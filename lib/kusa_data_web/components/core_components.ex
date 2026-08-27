@@ -68,7 +68,7 @@ defmodule KusaDataWeb.CoreComponents do
       aria-label={@label}
       title={@label}
       class={[
-        "inline-flex size-9 items-center justify-center rounded-card border border-line bg-surface-2 text-muted",
+        "inline-flex size-9 items-center justify-center rounded-full border border-line bg-surface-2 text-muted",
         "transition-colors hover:border-accent-line hover:text-accent disabled:opacity-50",
         @class
       ]}

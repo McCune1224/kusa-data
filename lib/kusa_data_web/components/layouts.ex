@@ -15,10 +15,10 @@ defmodule KusaDataWeb.Layouts do
   def app(assigns) do
     ~H"""
     <div class="flex min-h-screen flex-col bg-canvas text-ink">
-      <header class="sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur-md">
-        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-          <a href="/" class="group flex items-center gap-2.5 text-ink">
-            <span class="flex size-9 items-center justify-center rounded-card bg-accent font-display text-lg font-bold text-accent-ink transition-transform group-hover:-rotate-3">
+      <header class="sticky top-0 z-40 border-b border-line bg-canvas">
+        <div class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6">
+          <a href="/" class="group flex shrink-0 items-center gap-2.5 text-ink">
+            <span class="flex size-9 items-center justify-center rounded-full bg-accent font-display text-lg font-bold text-accent-ink transition-transform group-hover:-rotate-3">
               K
             </span>
             <span class="font-display text-[17px] font-semibold tracking-tight">
@@ -26,7 +26,7 @@ defmodule KusaDataWeb.Layouts do
             </span>
           </a>
 
-          <nav class="hidden items-center gap-1 md:flex">
+          <nav class="hidden flex-1 items-center justify-center gap-1 md:flex">
             <.nav_link to={~p"/"} active={@nav == :tournaments}>Tournaments</.nav_link>
             <.nav_link to={~p"/atlas"} active={@nav == :atlas}>Atlas</.nav_link>
             <.nav_link to={~p"/rankings"} active={@nav == :rankings}>Rankings</.nav_link>
@@ -37,17 +37,7 @@ defmodule KusaDataWeb.Layouts do
             <% end %>
           </nav>
 
-          <div class="hidden items-center gap-2 md:flex">
-            <form action={~p"/"} method="get" class="relative">
-              <input
-                type="search"
-                name="q"
-                placeholder="Search tournaments…"
-                aria-label="Search tournaments"
-                class="w-44 rounded-pill border border-line bg-surface py-1.5 pl-8 pr-3 text-sm text-ink placeholder:text-faint focus:w-56 focus:border-accent-line focus:outline-none focus:ring-2 focus:ring-accent/20"
-              />
-              <span class="hero-magnifying-glass absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-faint"></span>
-            </form>
+          <div class="hidden shrink-0 items-center gap-2 md:flex">
             <%= if @current_user do %>
               <span class="max-w-32 truncate text-xs text-muted">{@current_user.email}</span>
               <.link
@@ -80,7 +70,7 @@ defmodule KusaDataWeb.Layouts do
             type="button"
             phx-click={JS.toggle(to: "#mobile-nav")}
             aria-label="Toggle navigation"
-            class="-mr-2 inline-flex size-10 items-center justify-center rounded-card border border-line text-ink transition-colors hover:border-accent-line md:hidden"
+            class="-mr-2 inline-flex size-10 items-center justify-center rounded-full border border-line text-ink transition-colors hover:border-accent-line md:hidden"
           >
             <span class="hero-bars-3 size-5"></span>
           </button>
@@ -89,14 +79,14 @@ defmodule KusaDataWeb.Layouts do
         <div id="mobile-nav" hidden class="fixed inset-0 z-50 flex flex-col bg-canvas md:hidden">
           <div class="flex h-16 items-center justify-between border-b border-line px-4">
             <a href="/" class="flex items-center gap-2.5">
-              <span class="flex size-9 items-center justify-center rounded-card bg-accent font-display text-lg font-bold text-accent-ink">K</span>
+              <span class="flex size-9 items-center justify-center rounded-full bg-accent font-display text-lg font-bold text-accent-ink">K</span>
               <span class="font-display text-[17px] font-semibold tracking-tight text-ink">Kusa<span class="text-accent">Data</span></span>
             </a>
             <button
               type="button"
               phx-click={JS.toggle(to: "#mobile-nav")}
               aria-label="Close navigation"
-              class="inline-flex size-10 items-center justify-center rounded-card border border-line text-ink"
+              class="inline-flex size-10 items-center justify-center rounded-full border border-line text-ink"
             >
               <span class="hero-x-mark size-6"></span>
             </button>

@@ -57,7 +57,7 @@ defmodule KusaDataWeb.HomeLive do
               aria-label="Search tournaments"
               class="w-full rounded-pill border border-line bg-canvas px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-accent-line focus:outline-none focus:ring-2 focus:ring-accent/20"
             />
-            <.button type="submit" class="shrink-0">Search</.button>
+            <.button type="submit" class="shrink-0 !rounded-pill">Search</.button>
           </form>
         </div>
       </section>
