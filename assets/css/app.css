@@ -17,38 +17,38 @@
 @custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
 
 :root {
-  --bg: #fdfcf8;
-  --surface: #ffffff;
-  --surface2: #f0ede6;
-  --border: #0f0f0f;
-  --border2: #0f0f0f;
-  --text: #0f0f0f;
-  --muted: #52525b;
+  --bg: #08070b;
+  --surface: #121116;
+  --surface2: #1a1920;
+  --border: rgba(255, 255, 255, 0.08);
+  --border2: rgba(255, 255, 255, 0.14);
+  --text: #f5f3ff;
+  --muted: #9a95b0;
   --accent: #ffcc00;
-  --accent2: #ff2e7e;
-  --accent-dark: #7a6500;
-  --accent-text: #0f0f0f;
-  --bento-radius: 0px;
-  --card-radius: 0px;
-  --chip-radius: 0px;
+  --accent2: #ffd60a;
+  --accent-dark: #eab308;
+  --accent-text: #08070b;
+  --bento-radius: 16px;
+  --card-radius: 14px;
+  --chip-radius: 9999px;
 }
 
 @theme {
-  --color-bg: #fdfcf8;
-  --color-surface: #ffffff;
-  --color-surface2: #f0ede6;
-  --color-border: #0f0f0f;
-  --color-border2: #0f0f0f;
-  --color-text: #0f0f0f;
-  --color-muted: #52525b;
+  --color-bg: #08070b;
+  --color-surface: #121116;
+  --color-surface2: #1a1920;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border2: rgba(255, 255, 255, 0.14);
+  --color-text: #f5f3ff;
+  --color-muted: #9a95b0;
   --color-accent: #ffcc00;
-  --color-accent2: #ff2e7e;
-  --color-lime-50: #f8fafc;
-  --color-lime-100: #f1f5f9;
-  --color-lime-200: #e2e8f0;
-  --color-lime-300: #0f0f0f;
-  --color-lime-400: #0f0f0f;
-  --color-lime-500: #0f0f0f;
+  --color-accent2: #ffd60a;
+  --color-lime-50: #fefce8;
+  --color-lime-100: #fef9c3;
+  --color-lime-200: #fef08a;
+  --color-lime-300: #ffcc00;
+  --color-lime-400: #ffcc00;
+  --color-lime-500: #eab308;
   --radius-bento: 0px;
   --radius-card: 0px;
   --radius-chip: 0px;
@@ -70,18 +70,18 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
   background-color: var(--bg);
 }
 
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #08070b;
-  --surface: #121116;
-  --surface2: #1a1920;
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #f5f3ff;
-  --muted: #9a95b0;
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fdfcf8;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --border: #0f0f0f;
+  --text: #0f0f0f;
+  --muted: #52525b;
 }
 
 body {
@@ -93,7 +93,7 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Arena Brutalist utilities — thick borders, visible grid */
+/* Black and Yellow — distinctive, not AI bento */
 .bento {
   display: grid;
   gap: 12px;
@@ -130,22 +130,30 @@ body {
 }
 
 .glass {
-  background: var(--surface);
-  border: 2px solid var(--border);
+  background: rgba(18, 17, 22, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
 }
 
 .noise {
   position: relative;
 }
 
-/* Arena grid — visible, brutalist */
+/* Distinctive grid — subtle, not brutalist paper */
 .desk-grid {
   background-image:
-    linear-gradient(var(--border) 1.5px, transparent 1.5px),
-    linear-gradient(90deg, var(--border) 1.5px, transparent 1.5px);
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 48px 48px;
   background-position: center top;
-  opacity: 0.04;
+}
+.desk-grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 ::selection {
@@ -317,11 +325,13 @@ body {
   font-weight: 900;
 }
 
-/* Arena fix: lime is now brutalist black, not lime */
-.bg-lime-400 { background-color: var(--text) !important; color: var(--bg) !important; }
-.bg-lime-300 { background-color: var(--text) !important; color: var(--bg) !important; }
-.text-lime-400, .text-lime-300 { color: var(--text) !important; }
-.border-lime-400 { border-color: var(--text) !important; }
+/* Black and Yellow: lime is now true yellow, not lime green */
+.bg-lime-400 { background-color: var(--accent) !important; color: var(--accent-text) !important; }
+.bg-lime-300 { background-color: var(--accent) !important; color: var(--accent-text) !important; }
+.text-lime-400 { color: var(--accent) !important; }
+.text-lime-300 { color: var(--accent) !important; }
+.border-lime-400 { border-color: var(--accent) !important; }
+.text-lime-400::selection, .text-lime-300::selection { background: var(--accent); color: var(--accent-text); }
 .ring-lime-400\/15 { --tw-ring-color: rgba(255,204,0,0.15) !important; }
 .focus\:border-lime-400\/50:focus { border-color: rgba(255,204,0,0.5) !important; }
 .focus\:ring-lime-400\/15:focus { --tw-ring-color: rgba(255,204,0,0.15) !important; }

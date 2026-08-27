@@ -89,7 +89,16 @@ defmodule KusaData.Atlas do
   """
   @spec map_data() :: [map()]
   def map_data do
-    case full_year_2026_regions() do
+    full_year_result =
+      try do
+        full_year_2026_regions()
+      rescue
+        _ -> {:error, :no_cache}
+      catch
+        :exit, _ -> {:error, :no_cache}
+      end
+
+    case full_year_result do
       {:ok, regions, _status} ->
         to_bubbles(regions)
 

@@ -94,7 +94,7 @@ defmodule KusaDataWeb.TournamentGrid do
 
                   <div
                     :if={relative_start(tournament)}
-                    class="mt-2 font-mono text-xs text-[#a3e635]"
+                    class="mt-2 font-mono text-xs text-[#ffcc00]"
                   >
                     {relative_start(tournament)}
                   </div>
@@ -113,7 +113,7 @@ defmodule KusaDataWeb.TournamentGrid do
                       ></span>
                       {if tournament["isRegistrationOpen"], do: "reg open", else: "no open reg"}
                     </span>
-                    <span class="inline-flex items-center gap-1 text-xs font-medium text-[#a3e635]/0 transition-colors group-hover:text-[#a3e635]">
+                    <span class="inline-flex items-center gap-1 text-xs font-medium text-[#ffcc00]/0 transition-colors group-hover:text-[#ffcc00]">
                       View bracket <.icon name="hero-arrow-right" class="size-3.5" />
                     </span>
                   </div>

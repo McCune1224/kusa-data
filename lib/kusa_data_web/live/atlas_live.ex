@@ -36,7 +36,14 @@ defmodule KusaDataWeb.AtlasLive do
         {:noreply, socket}
 
       _ ->
-        map_data = Atlas.map_data()
+        map_data =
+          try do
+            Atlas.map_data()
+          rescue
+            _ -> []
+          catch
+            :exit, _ -> []
+          end
 
         {:noreply,
          socket
@@ -46,7 +53,14 @@ defmodule KusaDataWeb.AtlasLive do
   end
 
   def handle_params(_params, _uri, socket) do
-    map_data = Atlas.map_data()
+    map_data =
+      try do
+        Atlas.map_data()
+      rescue
+        _ -> []
+      catch
+        :exit, _ -> []
+      end
 
     {:noreply,
      socket

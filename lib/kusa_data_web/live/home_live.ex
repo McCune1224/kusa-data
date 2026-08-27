@@ -355,7 +355,7 @@ defmodule KusaDataWeb.HomeLive do
       "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
 
     if active? do
-      "#{base} bg-[#a3e635] text-[#08070b]"
+      "#{base} bg-[#ffcc00] text-[#08070b]"
     else
       "#{base} border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border2)] hover:text-[#f5f3ff]"
     end

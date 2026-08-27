@@ -37,8 +37,8 @@ defmodule KusaDataWeb.Layouts do
       <header class="sticky top-0 z-40 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(8,7,11,0.8)] backdrop-blur-xl supports-[backdrop-filter]:bg-[rgba(8,7,11,0.8)]">
         <div class="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between px-4 sm:px-6">
           <a href="/" class="group flex items-center gap-3 text-[#f5f3ff]">
-            <span class="flex size-8 items-center justify-center bg-[#a3e635] text-sm font-black text-[#08070b] transition-transform group-hover:rotate-12">K</span>
-            <span class="text-[15px] font-black uppercase tracking-[0.16em]">Kusa<span class="text-[#a3e635]">Data</span></span>
+            <span class="flex size-8 items-center justify-center bg-[#ffcc00] text-sm font-black text-[#08070b] transition-transform group-hover:rotate-12">K</span>
+            <span class="text-[15px] font-black uppercase tracking-[0.16em]">Kusa<span class="text-[#ffcc00]">Data</span></span>
           </a>
 
           <nav class="hidden items-center gap-6 md:flex">
@@ -47,7 +47,7 @@ defmodule KusaDataWeb.Layouts do
             <.nav_link to={~p"/atlas"} active={@nav == :atlas}>
               <span class="inline-flex items-center gap-1.5">
                 Atlas
-                <span class="rounded-full bg-[#a3e635] px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-widest text-[#08070b]">NEW</span>
+                <span class="rounded-full bg-[#ffcc00] px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-widest text-[#08070b]">NEW</span>
               </span>
             </.nav_link>
             <%= if @current_user do %>
@@ -97,7 +97,7 @@ defmodule KusaDataWeb.Layouts do
             <% else %>
               <.link
                 navigate={~p"/auth?mode=login"}
-                class="rounded-full border border-[#a3e635]/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#a3e635] transition-colors hover:bg-[#a3e635] hover:text-[#08070b]"
+                class="rounded-full border border-[#ffcc00]/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#ffcc00] transition-colors hover:bg-[#ffcc00] hover:text-[#08070b]"
               >
                 Log in
               </.link>
@@ -122,7 +122,7 @@ defmodule KusaDataWeb.Layouts do
             <.nav_link to={~p"/atlas"} active={@nav == :atlas} mobile>
               <span class="inline-flex items-center gap-1.5">
                 Atlas
-                <span class="rounded-full bg-[#a3e635] px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-widest text-[#08070b]">NEW</span>
+                <span class="rounded-full bg-[#ffcc00] px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-widest text-[#08070b]">NEW</span>
               </span>
             </.nav_link>
             <%= if @current_user do %>
@@ -171,13 +171,13 @@ defmodule KusaDataWeb.Layouts do
         :classes,
         cond do
           assigns.mobile and assigns.active ->
-            "border-l-2 border-[#a3e635] pl-3 text-[#f5f3ff]"
+            "border-l-2 border-[#ffcc00] pl-3 text-[#f5f3ff]"
 
           assigns.mobile ->
             "border-l border-transparent pl-3 text-[#9a95b0] hover:text-[#f5f3ff]"
 
           assigns.active ->
-            "relative border-b-2 border-[#a3e635] py-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#f5f3ff] after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:w-full after:bg-[#a3e635] after:content-['']"
+            "relative border-b-2 border-[#ffcc00] py-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#f5f3ff] after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:w-full after:bg-[#ffcc00] after:content-['']"
 
           true ->
             "relative py-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#9a95b0] transition-colors hover:text-[#f5f3ff]"

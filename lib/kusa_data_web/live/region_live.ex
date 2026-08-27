@@ -127,13 +127,13 @@ defmodule KusaDataWeb.RegionLive do
       <div class="animate-fade-up space-y-6">
         <span class="sr-only">Noir Bento</span>
         <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--muted)]">
-          <span><span class="mr-2 inline-block size-2 rounded-full bg-[#a3e635]"></span>Live bracket index</span>
+          <span><span class="mr-2 inline-block size-2 rounded-full bg-[#ffcc00]"></span>Live bracket index</span>
           <span class="hidden sm:inline">Regions · Noir Bento</span>
-          <span class="text-[#a3e635]">02 — Regions</span>
+          <span class="text-[#ffcc00]">02 — Regions</span>
         </div>
 
         <section class="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
-          <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a3e635]">
+          <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-[#ffcc00]">
             Browse by region
           </p>
           <div class="mt-2 flex flex-wrap items-end justify-between gap-4">
@@ -179,7 +179,7 @@ defmodule KusaDataWeb.RegionLive do
                       </div>
                       <.icon
                         name="hero-arrow-right"
-                        class="size-4 shrink-0 text-[var(--muted)] group-hover:text-[#a3e635]"
+                        class="size-4 shrink-0 text-[var(--muted)] group-hover:text-[#ffcc00]"
                       />
                     </div>
                   </.link>

@@ -1,5 +1,6 @@
 defmodule KusaDataWeb.AtlasLiveTest do
-  use KusaDataWeb.ConnCase
+  use KusaDataWeb.ConnCase, async: false
+  use KusaData.Test.Doubles
 
   import Phoenix.LiveViewTest
 

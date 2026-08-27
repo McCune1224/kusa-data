@@ -276,7 +276,7 @@ defmodule KusaDataWeb.TournamentLive do
               >
                 All tournaments
               </.btn>
-              <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#a3e635]">
+              <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#ffcc00]">
                 Tournament · Noir Bento
               </p>
               <h1 class="mt-2 text-3xl font-black tracking-[-0.03em] text-[#f5f3ff]">
@@ -445,7 +445,7 @@ defmodule KusaDataWeb.TournamentLive do
                   </h3>
                   <.link
                     navigate={~p"/atlas"}
-                    class="text-xs font-bold text-[#a3e635] hover:underline"
+                    class="text-xs font-bold text-[#ffcc00] hover:underline"
                   >Open Atlas →</.link>
                 </div>
                 <div class="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-xs text-[var(--muted)]">
@@ -498,7 +498,7 @@ defmodule KusaDataWeb.TournamentLive do
     base = "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
 
     if active? do
-      "#{base} bg-[#a3e635] text-[#08070b]"
+      "#{base} bg-[#ffcc00] text-[#08070b]"
     else
       "#{base} border border-[var(--border)] bg-[var(--surface2)] text-[var(--muted)] hover:border-[var(--border2)] hover:text-[#f5f3ff]"
     end

@@ -5,18 +5,18 @@
     <section class="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 lg:p-10">
       <div class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
-          <div class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#a3e635]">
-            <span class="size-2 rounded-full bg-[#a3e635]"></span>
+          <div class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#ffcc00]">
+            <span class="size-2 rounded-full bg-[#ffcc00]"></span>
             The competitive Melee desk — Live
           </div>
           <h1 class="mt-3 font-black leading-[0.9] tracking-[-0.06em] text-[#f5f3ff] text-[44px] sm:text-[56px] lg:text-[64px]">
-            Find your next<br /><span class="text-[#a3e635]">bracket.</span>
+            Find your next<br /><span class="text-[#ffcc00]">bracket.</span>
           </h1>
           <p class="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
             Tournament discovery with graph-powered scouting. Every region, every rivalry, every run — connected.
           </p>
           <div class="mt-5 hidden items-center gap-2 text-[11px] text-[var(--muted)] lg:flex">
-            <span class="size-2 rounded-full bg-[#a3e635]"></span>
+            <span class="size-2 rounded-full bg-[#ffcc00]"></span>
             Noir Bento bento layout · Atlas.Graph preview
           </div>
         </div>
@@ -36,7 +36,7 @@
                 type="text"
                 placeholder="start.gg/tournament/…"
                 autocomplete="off"
-                class="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                class="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#ffcc00]/50 focus:ring-2 focus:ring-[#ffcc00]/15"
               />
               <.btn
                 variant="primary"
@@ -86,7 +86,7 @@
         </div>
         <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4">
           <div class="font-mono text-2xl font-bold text-[#f5f3ff]">
-            Graph <span class="text-[#a3e635]">●</span>
+            Graph <span class="text-[#ffcc00]">●</span>
           </div>
           <div class="text-[11px] font-medium uppercase tracking-widest text-[var(--muted)]">
             H2H network
@@ -132,7 +132,7 @@
           class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-bold tracking-wide text-[var(--muted)] transition-colors hover:border-[var(--border2)] hover:text-[#f5f3ff]"
         >
           Atlas
-          <span class="rounded-full bg-[#a3e635] px-1 py-0.5 text-[9px] font-bold leading-none text-[#08070b]">NEW</span>
+          <span class="rounded-full bg-[#ffcc00] px-1 py-0.5 text-[9px] font-bold leading-none text-[#08070b]">NEW</span>
         </.link>
       </div>
 
@@ -167,7 +167,7 @@
             class={[
               "rounded-full px-3 py-1 text-[13px] font-medium transition-colors",
               active_game?(chip.slug, @game) &&
-                "bg-[#a3e635] bg-lime-400 text-[#08070b] hover:bg-[#b8f05a]",
+                "bg-[#ffcc00] bg-lime-400 text-[#08070b] hover:bg-[#b8f05a]",
               !active_game?(chip.slug, @game) &&
                 "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border2)] hover:text-[#f5f3ff]"
             ]}
@@ -204,13 +204,13 @@
                   placeholder="Zip or postal code"
                   inputmode="numeric"
                   autocomplete="postal-code"
-                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#ffcc00]/50 focus:ring-2 focus:ring-[#ffcc00]/15"
                 />
                 <.input
                   field={@nearby_form[:radius]}
                   type="select"
                   options={Enum.map(@radii, fn r -> {r, r} end)}
-                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#a3e635]/50 sm:w-32"
+                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#ffcc00]/50 sm:w-32"
                 />
                 <.btn variant="primary" size="lg" type="submit" class="rounded-xl">
                   Search nearby
@@ -229,7 +229,7 @@
                 ] do %>
                   <.link
                     patch={browse_path(:upcoming, zip: zip, radius: radius, game: @game)}
-                    class="inline-flex items-center gap-1.5 text-[15px] text-[#f5f3ff] transition-colors hover:text-[#a3e635]"
+                    class="inline-flex items-center gap-1.5 text-[15px] text-[#f5f3ff] transition-colors hover:text-[#ffcc00]"
                   >
                     <.icon name="hero-map-pin" class="size-3.5 text-[var(--muted)]" />
                     {city}
@@ -239,7 +239,7 @@
             </div>
 
             <div class="hidden shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--surface2)] px-5 py-4 md:block">
-              <p class="font-mono text-2xl text-[#a3e635]">24/7</p>
+              <p class="font-mono text-2xl text-[#ffcc00]">24/7</p>
               <p class="mt-1 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
                 Bracket watch
               </p>
@@ -268,7 +268,7 @@
                 <.input
                   field={@past_form[:from]}
                   type="date"
-                  class="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                  class="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#ffcc00]/50 focus:ring-2 focus:ring-[#ffcc00]/15"
                 />
               </div>
               <div class="flex flex-col gap-1.5">
@@ -278,7 +278,7 @@
                 <.input
                   field={@past_form[:to]}
                   type="date"
-                  class="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                  class="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#ffcc00]/50 focus:ring-2 focus:ring-[#ffcc00]/15"
                 />
               </div>
               <div class="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -290,7 +290,7 @@
                   type="text"
                   placeholder="genesis, chicago, convention center…"
                   autocomplete="off"
-                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#ffcc00]/50 focus:ring-2 focus:ring-[#ffcc00]/15"
                 />
               </div>
               <div class="flex h-11 items-center">
@@ -298,7 +298,7 @@
                   field={@past_form[:results_only]}
                   type="checkbox"
                   label="Results only"
-                  class="size-4 rounded border-[var(--border)] bg-[var(--surface2)] text-[#a3e635] accent-[#a3e635]"
+                  class="size-4 rounded border-[var(--border)] bg-[var(--surface2)] text-[#ffcc00] accent-[#ffcc00]"
                 />
               </div>
               <.btn variant="primary" size="lg" type="submit" class="rounded-xl">
@@ -313,7 +313,7 @@
               <%= for {label, from, to} <- quick_ranges() do %>
                 <.link
                   patch={browse_path(:past, from: from, to: to, game: @game)}
-                  class="inline-flex items-center gap-1.5 text-[15px] text-[#f5f3ff] transition-colors hover:text-[#a3e635]"
+                  class="inline-flex items-center gap-1.5 text-[15px] text-[#f5f3ff] transition-colors hover:text-[#ffcc00]"
                 >
                   <.icon name="hero-calendar-days" class="size-3.5 text-[var(--muted)]" />
                   {label}
@@ -347,7 +347,7 @@
                   placeholder="Search tournaments, cities, venues…"
                   autocomplete="off"
                   phx-debounce="400"
-                  class="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] pl-12 pr-4 text-[15px] text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                  class="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] pl-12 pr-4 text-[15px] text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#ffcc00]/50 focus:ring-2 focus:ring-[#ffcc00]/15"
                 />
               </div>
             </.form>
