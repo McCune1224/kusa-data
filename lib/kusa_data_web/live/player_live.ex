@@ -53,14 +53,16 @@ defmodule KusaDataWeb.PlayerLive do
   end
 
   defp spawn_stats_load(socket, player_id, game) do
+    if pid = socket.assigns[:stats_pid], do: Process.exit(pid, :kill)
     ref = make_ref()
     parent = self()
 
-    Task.start(fn ->
-      send(parent, {:stats_loaded, ref, Stats.for_player(player_id, game)})
-    end)
+    {:ok, pid} =
+      Task.start(fn ->
+        send(parent, {:stats_loaded, ref, Stats.for_player(player_id, game)})
+      end)
 
-    assign(socket, stats_ref: ref)
+    assign(socket, stats_ref: ref, stats_pid: pid)
   end
 
   defp valid_game(nil), do: nil

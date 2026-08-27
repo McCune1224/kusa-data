@@ -180,59 +180,65 @@ defmodule KusaDataWeb.RankingsLive do
               <.skeleton :for={_ <- 1..10} class="h-12 w-full rounded-none" />
             </div>
           <% else %>
-            <%= if @data == nil || @data["rankings"] == [] do %>
-              <.empty_state icon="hero-trophy" title="No eligible players">
-                <:body>
-                  No players met the tournament floor in this scope yet. {if @error,
-                    do: " (#{inspect(@error)})"}
-                </:body>
-              </.empty_state>
-            <% else %>
-              <div class="overflow-hidden rounded-xl border border-stone-800/80">
-                <div class="flex items-center gap-4 border-b border-stone-800 bg-stone-900/60 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-                  <div class="w-12 shrink-0">#</div>
-                  <div class="flex-1">Player</div>
-                  <div class="hidden w-16 shrink-0 justify-end sm:flex">Rating</div>
-                  <div class="hidden w-20 shrink-0 justify-end sm:flex">W-L</div>
-                  <div class="hidden w-16 shrink-0 justify-end sm:flex">Events</div>
-                </div>
+            <%= cond do %>
+              <% @error != nil -> %>
+                <.empty_state icon="hero-exclamation-triangle" title="Couldn't load rankings">
+                  <:body>
+                    Something went wrong talking to start.gg. Please try again in a moment.
+                  </:body>
+                </.empty_state>
+              <% @data == nil || @data["rankings"] == [] -> %>
+                <.empty_state icon="hero-trophy" title="No eligible players">
+                  <:body>
+                    No players met the tournament floor in this scope yet.
+                  </:body>
+                </.empty_state>
+              <% true -> %>
+                <div class="overflow-hidden rounded-xl border border-stone-800/80">
+                  <div class="flex items-center gap-4 border-b border-stone-800 bg-stone-900/60 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                    <div class="w-12 shrink-0">#</div>
+                    <div class="flex-1">Player</div>
+                    <div class="hidden w-16 shrink-0 justify-end sm:flex">Rating</div>
+                    <div class="hidden w-20 shrink-0 justify-end sm:flex">W-L</div>
+                    <div class="hidden w-16 shrink-0 justify-end sm:flex">Events</div>
+                  </div>
 
-                <div id="ranking-rows">
-                  <div
-                    :for={{player, rank} <- Enum.with_index(@data["rankings"], 1)}
-                    class="flex items-center gap-4 border-b border-stone-800/70 bg-stone-900/40 px-5 py-3 transition-colors last:border-b-0 hover:bg-stone-900/70"
-                  >
-                    <div class={["w-12 shrink-0 font-mono text-sm font-bold", rank_class(rank)]}>
-                      {rank}
-                    </div>
-                    <div class="min-w-0 flex-1 truncate">
-                      <.link
-                        navigate={~p"/player/#{player["player_id"]}"}
-                        class="truncate text-[15px] font-medium text-stone-200 transition-colors hover:text-lime-300"
-                      >
-                        {player["gamer_tag"]}
-                      </.link>
-                    </div>
-                    <div class="hidden w-16 shrink-0 justify-end font-mono text-[15px] font-semibold text-stone-100 sm:flex">
-                      {player["rating"]}
-                    </div>
-                    <div class="hidden w-20 shrink-0 justify-end font-mono text-[13px] sm:flex">
-                      <span class="text-emerald-400">{player["wins"]}W</span>
-                      <span class="mx-1 text-stone-600">-</span>
-                      <span class="text-rose-400">{player["losses"]}L</span>
-                    </div>
-                    <div class="hidden w-16 shrink-0 justify-end font-mono text-[13px] text-stone-400 sm:flex">
-                      {player["tournaments"]}
+                  <div id="ranking-rows">
+                    <div
+                      :for={{player, rank} <- Enum.with_index(@data["rankings"], 1)}
+                      class="flex items-center gap-4 border-b border-stone-800/70 bg-stone-900/40 px-5 py-3 transition-colors last:border-b-0 hover:bg-stone-900/70"
+                    >
+                      <div class={["w-12 shrink-0 font-mono text-sm font-bold", rank_class(rank)]}>
+                        {rank}
+                      </div>
+                      <div class="min-w-0 flex-1 truncate">
+                        <.link
+                          navigate={~p"/player/#{player["player_id"]}"}
+                          class="truncate text-[15px] font-medium text-stone-200 transition-colors hover:text-lime-300"
+                        >
+                          {player["gamer_tag"]}
+                        </.link>
+                      </div>
+                      <div class="hidden w-16 shrink-0 justify-end font-mono text-[15px] font-semibold text-stone-100 sm:flex">
+                        {player["rating"]}
+                      </div>
+                      <div class="hidden w-20 shrink-0 justify-end font-mono text-[13px] sm:flex">
+                        <span class="text-emerald-400">{player["wins"]}W</span>
+                        <span class="mx-1 text-stone-600">-</span>
+                        <span class="text-rose-400">{player["losses"]}L</span>
+                      </div>
+                      <div class="hidden w-16 shrink-0 justify-end font-mono text-[13px] text-stone-400 sm:flex">
+                        {player["tournaments"]}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <p class="mt-3 text-xs text-stone-500">
-                {length(@data["rankings"])} ranked · {@data["players_scanned"]} players scanned · {@data[
-                  "tournaments"
-                ]} tournaments
-              </p>
+                <p class="mt-3 text-xs text-stone-500">
+                  {length(@data["rankings"])} ranked · {@data["players_scanned"]} players scanned · {@data[
+                    "tournaments"
+                  ]} tournaments
+                </p>
             <% end %>
           <% end %>
         </section>

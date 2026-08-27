@@ -144,6 +144,23 @@ defmodule KusaData.Tournaments do
     {:ok, empty_page(1)}
   end
 
+  defp run_browse(%{mode: :search, q: q} = query) when is_binary(q) do
+    trimmed = String.trim(q)
+
+    if String.length(trimmed) < 2 do
+      {:ok, empty_page(query.page)}
+    else
+      with {:ok, filter} <- build_filter(%{query | q: trimmed}) do
+        with {:ok, data} <-
+               Client.query(
+                 Queries.tournament_search(filter, query.page, @per_page, games_ids(query))
+               ) do
+          {:ok, parse_page(data, query.page)}
+        end
+      end
+    end
+  end
+
   defp run_browse(%{mode: :region, country: country}) when country in [nil, ""] do
     {:ok, empty_page(1)}
   end

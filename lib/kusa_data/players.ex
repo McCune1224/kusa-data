@@ -105,29 +105,68 @@ defmodule KusaData.Players do
     end
   end
 
-  defp fetch_all_sets(player_id, page, acc) do
-    with {:ok, data} <-
+  defp fetch_all_sets(player_id, page, _acc) do
+    with {:ok, first} <-
            Client.query_paged(
-             fn per_page ->
-               Queries.player_sets(player_id, page, per_page)
-             end,
+             fn per_page -> Queries.player_sets(player_id, page, per_page) end,
              @per_page
            ) do
-      sets_info = data["player"]["sets"]
-      nodes = sets_info["nodes"] || []
-      total_pages = sets_info["pageInfo"]["totalPages"] || 1
-      acc = acc ++ nodes
+      first_nodes = first["player"]["sets"]["nodes"] || []
+      total_pages = first["player"]["sets"]["pageInfo"]["totalPages"] || 1
 
       cond do
         page >= total_pages ->
-          {:ok, acc, nil}
+          {:ok, first_nodes, nil}
 
         page >= @max_pages ->
-          {:ok, acc, page + 1}
+          {:ok, first_nodes, page + 1}
+
+        total_pages <= @max_pages ->
+          fetch_remaining_parallel(player_id, page + 1, total_pages, total_pages, first_nodes)
 
         true ->
-          fetch_all_sets(player_id, page + 1, acc)
+          fetch_remaining_parallel(player_id, page + 1, @max_pages, total_pages, first_nodes)
       end
+    end
+  end
+
+  defp fetch_remaining_parallel(_player_id, from, to, _total_pages, first_nodes) when from > to do
+    continuation = if to >= @max_pages, do: to + 1, else: nil
+    {:ok, first_nodes, continuation}
+  end
+
+  defp fetch_remaining_parallel(player_id, from, to, total_pages, first_nodes) do
+    pages = Enum.to_list(from..to)
+
+    case pages
+         |> Task.async_stream(
+           fn p ->
+             Client.query_paged(
+               fn per_page -> Queries.player_sets(player_id, p, per_page) end,
+               @per_page
+             )
+           end,
+           max_concurrency: 5,
+           timeout: :infinity,
+           ordered: false
+         )
+         |> Enum.reduce_while({:ok, []}, fn
+           {:ok, {:ok, data}}, {:ok, acc} ->
+             nodes = data["player"]["sets"]["nodes"] || []
+             {:cont, {:ok, acc ++ nodes}}
+
+           {:ok, {:error, reason}}, _ ->
+             {:halt, {:error, reason}}
+
+           {:error, reason}, _ ->
+             {:halt, {:error, reason}}
+         end) do
+      {:ok, extra_nodes} ->
+        continuation = if total_pages > @max_pages, do: @max_pages + 1, else: nil
+        {:ok, first_nodes ++ extra_nodes, continuation}
+
+      error ->
+        error
     end
   end
 

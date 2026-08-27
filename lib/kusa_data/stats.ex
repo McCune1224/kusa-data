@@ -32,6 +32,7 @@ defmodule KusaData.Stats do
   @spec clear_cache(integer(), String.t() | nil) :: :ok
   def clear_cache(player_id, game \\ nil) do
     Cache.delete(stats_key(player_id, game))
+    Cache.delete("player:#{player_id}:sets")
     :ok
   end
 
@@ -56,15 +57,21 @@ defmodule KusaData.Stats do
   defp stats_key(player_id, game), do: "player:#{player_id}:stats:#{game}"
 
   defp compute(player_id, game) do
-    with {:ok, identity} <- fetch_identity(player_id) do
-      with {:ok, sets} <- fetch_sets(player_id) do
-        sets = if game, do: Enum.filter(sets, &game_matches?(&1, game)), else: sets
+    with {:ok, identity} <- fetch_identity(player_id),
+         {:ok, sets} <- fetch_sets_cached(player_id) do
+      sets = if game, do: Enum.filter(sets, &game_matches?(&1, game)), else: sets
 
-        {:ok,
-         Engine.build(identity, sets)
-         |> Map.merge(profile_fields(identity))
-         |> Map.put("recent_events", recent_events(identity, sets))}
-      end
+      {:ok,
+       Engine.build(identity, sets)
+       |> Map.merge(profile_fields(identity))
+       |> Map.put("recent_events", recent_events(identity, sets))}
+    end
+  end
+
+  defp fetch_sets_cached(player_id) do
+    case Cache.fetch("player:#{player_id}:sets", @cache_ttl, fn -> fetch_sets(player_id) end) do
+      {:ok, sets, _} -> {:ok, sets}
+      {:error, _} = err -> err
     end
   end
 

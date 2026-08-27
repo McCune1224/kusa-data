@@ -13,6 +13,7 @@ defmodule KusaData.Cache do
   """
 
   @default_ttl 300
+  @inflight __MODULE__.Inflight
 
   @spec fetch(String.t(), (-> {:ok, term()} | {:error, term()})) ::
           {:ok, term(), :hit | :miss | :bypass} | {:error, term()}
@@ -23,13 +24,71 @@ defmodule KusaData.Cache do
   def fetch(key, ttl, fun) do
     case command(["GET", key]) do
       {:ok, nil} ->
-        store(key, ttl, fun, :miss)
+        claim_or_wait(key, ttl, fun, :miss)
 
       {:ok, payload} ->
         {:ok, Jason.decode!(payload), :hit}
 
       {:error, _reason} ->
-        store(key, ttl, fun, :bypass)
+        claim_or_wait(key, ttl, fun, :bypass)
+    end
+  end
+
+  defp claim_or_wait(key, ttl, fun, status) do
+    ensure_inflight!()
+
+    case Agent.get_and_update(@inflight, fn state ->
+           case Map.get(state, key) do
+             nil ->
+               ref = make_ref()
+               {:claimed, Map.put(state, key, {ref, []})}
+
+             {ref, waiters} ->
+               {{:waiting, ref}, Map.put(state, key, {ref, waiters ++ [self()]})}
+           end
+         end) do
+      :claimed ->
+        result = store(key, ttl, fun, status)
+        notify_and_release(key, result)
+        result
+
+      {:waiting, ref} ->
+        receive do
+          {^ref, result} -> result
+        after
+          30_000 -> store(key, ttl, fun, status)
+        end
+    end
+  end
+
+  defp notify_and_release(key, result) do
+    waiters =
+      Agent.get_and_update(@inflight, fn state ->
+        case Map.pop(state, key) do
+          {nil, state} ->
+            {[], state}
+
+          {{ref, waiters}, rest} ->
+            Enum.each(waiters, &send(&1, {ref, result}))
+            {waiters, rest}
+        end
+      end)
+
+    _ = waiters
+    :ok
+  end
+
+  defp ensure_inflight! do
+    case Process.whereis(@inflight) do
+      nil ->
+        case Agent.start_link(fn -> %{} end, name: @inflight) do
+          {:ok, _} -> :ok
+          {:error, {:already_started, _}} -> :ok
+          _ -> :ok
+        end
+
+      _ ->
+        :ok
     end
   end
 

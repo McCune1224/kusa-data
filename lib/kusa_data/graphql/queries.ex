@@ -85,7 +85,7 @@ defmodule KusaData.GraphQL.Queries do
     |> maybe_put(:afterDate, iso_to_unix(from))
     |> maybe_put(:beforeDate, iso_to_unix(to))
     |> maybe_put(:countryCode, query[:country])
-    |> maybe_put(:state, query[:state])
+    |> maybe_put(:addrState, query[:state])
     |> maybe_put_search(query[:q])
     |> put_games(videogame_ids_for(query))
   end
@@ -102,7 +102,7 @@ defmodule KusaData.GraphQL.Queries do
   @doc "Filter for text search over tournament name, city, and venue."
   @spec search_filter(map()) :: map()
   def search_filter(%{q: q} = query) when is_binary(q) and q != "" do
-    %{past: true, search: %{searchString: String.trim(q)}}
+    %{search: %{searchString: String.trim(q)}}
     |> put_games(videogame_ids_for(query))
   end
 
@@ -110,7 +110,7 @@ defmodule KusaData.GraphQL.Queries do
   @spec region_filter(map()) :: map()
   def region_filter(%{country: country} = query) when is_binary(country) do
     %{upcoming: true, countryCode: country}
-    |> maybe_put(:state, query[:state])
+    |> maybe_put(:addrState, query[:state])
     |> put_games(videogame_ids_for(query))
   end
 
