@@ -284,10 +284,6 @@ defmodule KusaDataWeb.HomeLive do
     Phoenix.HTML.Form.input_value(form, field) || ""
   end
 
-  defp place_city(nil), do: "you"
-  defp place_city(%{"city" => nil}), do: "you"
-  defp place_city(%{"city" => city}), do: city
-
   defp format_count(0), do: "No events"
   defp format_count(1), do: "1 event"
   defp format_count(total), do: "#{total} events"
@@ -328,19 +324,6 @@ defmodule KusaDataWeb.HomeLive do
     end
   end
 
-  defp mode_subtitle(%{mode: :upcoming, zip: zip, place: place}) when zip != nil,
-    do: "Melee near #{place_city(place)}"
-
-  defp mode_subtitle(%{mode: :upcoming}), do: "Melee worldwide, next up first"
-
-  defp mode_subtitle(%{mode: :past, from: from, to: to}) when from != nil and to != nil,
-    do: "#{from} → #{to}"
-
-  defp mode_subtitle(%{mode: :past, from: from}) when from != nil, do: "from #{from} onward"
-  defp mode_subtitle(%{mode: :past}), do: "Finished brackets, newest first"
-  defp mode_subtitle(%{mode: :search, q: q}) when q != nil, do: "matching “#{q}”"
-  defp mode_subtitle(%{mode: :search}), do: "type to search the archive"
-
   defp empty_hint(%{mode: :search}), do: " — try a different name, city, or venue"
   defp empty_hint(%{mode: :past}), do: " — try widening the date range"
 
@@ -350,27 +333,4 @@ defmodule KusaDataWeb.HomeLive do
   defp empty_hint(%{mode: :upcoming}),
     do: " — try widening the radius or the start.gg API may be unhappy"
 
-  defp tab_class(active?) do
-    base =
-      "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
-
-    if active? do
-      "#{base} bg-[#ffcc00] text-[#08070b]"
-    else
-      "#{base} border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border2)] hover:text-[#f5f3ff]"
-    end
-  end
-
-  defp quick_ranges do
-    today = Date.utc_today()
-    this_month = Date.beginning_of_month(today)
-    last_month = Date.add(this_month, -1) |> Date.beginning_of_month()
-    three_months = Date.add(this_month, -3) |> Date.beginning_of_month()
-
-    [
-      {"This month", Date.to_iso8601(this_month), Date.to_iso8601(today)},
-      {"Last month", Date.to_iso8601(last_month), Date.to_iso8601(Date.add(this_month, -1))},
-      {"Last 3 months", Date.to_iso8601(three_months), Date.to_iso8601(today)}
-    ]
-  end
 end
