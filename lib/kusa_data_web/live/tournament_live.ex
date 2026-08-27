@@ -238,7 +238,7 @@ defmodule KusaDataWeb.TournamentLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div>
+      <div class="animate-fade-up space-y-6">
         <%= cond do %>
           <% @loading -> %>
             <div class="space-y-10">
@@ -265,77 +265,108 @@ defmodule KusaDataWeb.TournamentLive do
               </div>
             </div>
           <% @tournament -> %>
-            <section>
-              <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
+            <span class="sr-only">Noir Bento</span>
+            <section class="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+              <.btn
+                variant="ghost"
+                size="sm"
+                icon="hero-arrow-left"
+                navigate={~p"/"}
+                class="rounded-xl"
+              >
                 All tournaments
               </.btn>
-              <p class="mt-4 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-                Tournament
+              <p class="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#a3e635]">
+                Tournament · Noir Bento
               </p>
-              <h1 class="mt-2 text-3xl font-semibold tracking-tight text-stone-50">
+              <h1 class="mt-2 text-3xl font-black tracking-[-0.03em] text-[#f5f3ff]">
                 {@tournament["name"]}
               </h1>
 
-              <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px] text-[var(--muted)]">
                 <span class="inline-flex items-center gap-1.5">
-                  <.icon name="hero-map-pin" class="size-4 text-stone-600" />
-                  <span class="text-[15px] text-stone-400">{location_label(@tournament)}</span>
+                  <.icon name="hero-map-pin" class="size-4 text-[var(--muted)]" />
+                  {location_label(@tournament)}
                 </span>
                 <span class="inline-flex items-center gap-1.5">
-                  <.icon name="hero-calendar-days" class="size-4 text-stone-600" />
-                  <span class="text-[15px] text-stone-400">{date_range(@tournament)}</span>
+                  <.icon name="hero-calendar-days" class="size-4 text-[var(--muted)]" />
+                  {date_range(@tournament)}
                 </span>
                 <%= if venue_label(@tournament) != "—" do %>
                   <span class="inline-flex items-center gap-1.5">
-                    <.icon name="hero-building-office" class="size-4 text-stone-600" />
-                    <span class="text-[15px] text-stone-400">{venue_label(@tournament)}</span>
+                    <.icon name="hero-building-office" class="size-4 text-[var(--muted)]" />
+                    {venue_label(@tournament)}
                   </span>
                 <% end %>
                 <a
                   href={"https://www.start.gg/#{@tournament["slug"]}"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="inline-flex items-center gap-1.5 text-[15px] text-stone-400 transition-colors hover:text-stone-100"
+                  class="inline-flex items-center gap-1.5 transition-colors hover:text-[#f5f3ff]"
                 >
                   <.icon name="hero-arrow-top-right-on-square" class="size-4" /> start.gg
                 </a>
               </div>
 
               <%= if format_entrants(@tournament) != "—" do %>
-                <p class="mt-3 font-mono text-[13px] text-stone-400">
+                <p class="mt-3 font-mono text-[13px] text-[var(--muted)]">
                   {format_entrants(@tournament)}
                 </p>
               <% end %>
 
               <div class="mt-5 flex flex-wrap gap-2">
                 <%= if @bookmarked do %>
-                  <.btn variant="ghost" size="sm" phx-click="unbookmark" icon="hero-bookmark-slash">
+                  <.btn
+                    variant="ghost"
+                    size="sm"
+                    phx-click="unbookmark"
+                    icon="hero-bookmark-slash"
+                    class="rounded-xl"
+                  >
                     Saved
                   </.btn>
                 <% else %>
-                  <.btn variant="secondary" size="sm" phx-click="bookmark" icon="hero-bookmark">
+                  <.btn
+                    variant="secondary"
+                    size="sm"
+                    phx-click="bookmark"
+                    icon="hero-bookmark"
+                    class="rounded-xl"
+                  >
                     Save tournament
                   </.btn>
                 <% end %>
                 <%= if @watched do %>
-                  <.btn variant="ghost" size="sm" phx-click="unwatch" icon="hero-bell-slash">
+                  <.btn
+                    variant="ghost"
+                    size="sm"
+                    phx-click="unwatch"
+                    icon="hero-bell-slash"
+                    class="rounded-xl"
+                  >
                     Watching
                   </.btn>
                 <% else %>
-                  <.btn variant="ghost" size="sm" phx-click="watch" icon="hero-bell">
+                  <.btn
+                    variant="ghost"
+                    size="sm"
+                    phx-click="watch"
+                    icon="hero-bell"
+                    class="rounded-xl"
+                  >
                     Watch changes
                   </.btn>
                 <% end %>
+                <a
+                  href={"/tournament/#{@slug}/calendar.ics"}
+                  class="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 py-2 text-xs font-semibold text-[var(--muted)] transition-colors hover:border-[var(--border2)] hover:text-[#f5f3ff]"
+                >
+                  <.icon name="hero-calendar-days" class="size-4" /> Add to calendar
+                </a>
               </div>
-              <a
-                href={"/tournament/#{@slug}/calendar.ics"}
-                class="inline-flex items-center gap-2 rounded-none border border-stone-700/70 px-3 py-2 text-xs font-semibold text-stone-400 transition-colors hover:border-stone-500 hover:text-stone-100"
-              >
-                <.icon name="hero-calendar-days" class="size-4" /> Add to calendar
-              </a>
             </section>
 
-            <section class="mt-10">
+            <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur-sm sm:p-6">
               <div class="flex flex-wrap items-baseline justify-between gap-3">
                 <h2 class="text-lg font-semibold tracking-tight text-stone-100">Events</h2>
                 <span class="font-mono text-[13px] text-stone-400">
@@ -365,7 +396,7 @@ defmodule KusaDataWeb.TournamentLive do
               <div
                 id="events"
                 phx-update="stream"
-                class="mt-4 rounded-xl border border-stone-800/80"
+                class="mt-4 grid gap-3 sm:grid-cols-2"
               >
                 <div
                   id="events-empty"
@@ -377,7 +408,7 @@ defmodule KusaDataWeb.TournamentLive do
                 <div
                   :for={{id, ev} <- @streams.events}
                   id={id}
-                  class="flex flex-col gap-2 border-b border-stone-800/70 px-5 py-4 transition-colors last:border-b-0 hover:bg-stone-900/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                  class="flex flex-col gap-2 rounded-[20px] border border-[var(--border)] bg-[var(--surface2)] p-5 transition-colors hover:border-[var(--border2)] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
                   <div class="min-w-0">
                     <div class="truncate text-[15px] font-medium text-stone-200">{ev["name"]}</div>
@@ -404,6 +435,22 @@ defmodule KusaDataWeb.TournamentLive do
                       Results
                     </.btn>
                   </div>
+                </div>
+              </div>
+              <%!-- Mini Atlas preview — KusaData.Atlas.map_data --%>
+              <div class="mt-6 rounded-[20px] border border-[var(--border)] bg-[var(--surface2)] p-5">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-bold text-[#f5f3ff]">
+                    US Atlas <span class="font-normal text-[var(--muted)]">· mini preview</span>
+                  </h3>
+                  <.link
+                    navigate={~p"/atlas"}
+                    class="text-xs font-bold text-[#a3e635] hover:underline"
+                  >Open Atlas →</.link>
+                </div>
+                <div class="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-xs text-[var(--muted)]">
+                  Atlas.Graph · <code class="font-mono">KusaData.Atlas.map_data</code>
+                  · bubbles by attendees · {location_label(@tournament)} highlighted
                 </div>
               </div>
             </section>
@@ -448,12 +495,12 @@ defmodule KusaDataWeb.TournamentLive do
   end
 
   defp game_tab_class(active?) do
-    base = "px-3.5 py-1.5 text-sm font-medium transition-colors rounded-none"
+    base = "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
 
     if active? do
-      "#{base} bg-lime-400 text-stone-950"
+      "#{base} bg-[#a3e635] text-[#08070b]"
     else
-      "#{base} text-stone-400 hover:bg-stone-800/60 hover:text-stone-100"
+      "#{base} border border-[var(--border)] bg-[var(--surface2)] text-[var(--muted)] hover:border-[var(--border2)] hover:text-[#f5f3ff]"
     end
   end
 

@@ -33,17 +33,23 @@ defmodule KusaDataWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <div class="min-h-screen bg-stone-950">
-      <header class="border-b border-stone-800 bg-stone-950/95">
+    <div class="min-h-screen bg-[#08070b] text-[#f5f3ff]">
+      <header class="sticky top-0 z-40 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(8,7,11,0.8)] backdrop-blur-xl supports-[backdrop-filter]:bg-[rgba(8,7,11,0.8)]">
         <div class="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between px-4 sm:px-6">
-          <a href="/" class="group flex items-center gap-3 text-stone-100">
-            <span class="flex size-8 items-center justify-center bg-lime-400 text-sm font-black text-stone-950 transition-transform group-hover:rotate-12">K</span>
-            <span class="text-[15px] font-black uppercase tracking-[0.16em]">Kusa<span class="text-lime-400">Data</span></span>
+          <a href="/" class="group flex items-center gap-3 text-[#f5f3ff]">
+            <span class="flex size-8 items-center justify-center bg-[#a3e635] text-sm font-black text-[#08070b] transition-transform group-hover:rotate-12">K</span>
+            <span class="text-[15px] font-black uppercase tracking-[0.16em]">Kusa<span class="text-[#a3e635]">Data</span></span>
           </a>
 
           <nav class="hidden items-center gap-6 md:flex">
             <.nav_link to={~p"/"} active={@nav == :tournaments}>Tournaments</.nav_link>
             <.nav_link to={~p"/rankings"} active={@nav == :rankings}>Rankings</.nav_link>
+            <.nav_link to={~p"/atlas"} active={@nav == :atlas}>
+              <span class="inline-flex items-center gap-1.5">
+                Atlas
+                <span class="rounded-full bg-[#a3e635] px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-widest text-[#08070b]">NEW</span>
+              </span>
+            </.nav_link>
             <%= if @current_user do %>
               <.nav_link to={~p"/your-tournaments"} active={@nav == :your}>Saved</.nav_link>
               <.nav_link to={~p"/leagues"} active={@nav == :leagues}>Leagues</.nav_link>
@@ -53,20 +59,28 @@ defmodule KusaDataWeb.Layouts do
           <div class="flex items-center gap-3">
             <button
               type="button"
+              class="hidden items-center gap-2 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-xs text-[#9a95b0] transition-colors hover:border-[rgba(255,255,255,0.14)] hover:text-[#f5f3ff] md:inline-flex"
+              aria-label="Search"
+            >
+              <span class="font-mono text-[11px] leading-none">⌘K</span>
+              <span>Search</span>
+            </button>
+            <button
+              type="button"
               id="theme-toggle"
               data-theme-toggle
-              class="rounded-none border border-stone-700/70 px-2.5 py-1.5 text-stone-400 transition-colors hover:text-stone-100"
+              class="rounded-full border border-[rgba(255,255,255,0.08)] px-2.5 py-1.5 text-[#9a95b0] transition-colors hover:border-[rgba(255,255,255,0.14)] hover:text-[#f5f3ff]"
               aria-label="Toggle light theme"
             >
               <.icon name="hero-sun" class="size-4" />
             </button>
             <%= if @current_user do %>
-              <span class="hidden max-w-40 truncate text-xs text-stone-500 sm:block">
+              <span class="hidden max-w-40 truncate text-xs text-[#9a95b0] sm:block">
                 {@current_user.email}
               </span>
               <.link
                 navigate={~p"/settings"}
-                class="hidden rounded-none border border-stone-700/70 px-2.5 py-1 font-mono text-xs text-stone-400 transition-colors hover:text-stone-100 sm:block"
+                class="hidden rounded-full border border-[rgba(255,255,255,0.08)] px-2.5 py-1 font-mono text-xs text-[#9a95b0] transition-colors hover:border-[rgba(255,255,255,0.14)] hover:text-[#f5f3ff] sm:block"
               >
                 Settings
               </.link>
@@ -75,7 +89,7 @@ defmodule KusaDataWeb.Layouts do
                 <input type="hidden" name="_method" value="delete" />
                 <button
                   type="submit"
-                  class="rounded-none border border-stone-700/70 px-2.5 py-1 font-mono text-xs text-stone-400 transition-colors hover:border-rose-500/60 hover:text-rose-300"
+                  class="rounded-full border border-[rgba(255,255,255,0.08)] px-2.5 py-1 font-mono text-xs text-[#9a95b0] transition-colors hover:border-rose-500/60 hover:text-rose-300"
                 >
                   Log out
                 </button>
@@ -83,7 +97,7 @@ defmodule KusaDataWeb.Layouts do
             <% else %>
               <.link
                 navigate={~p"/auth?mode=login"}
-                class="rounded-none border border-lime-400/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-lime-300 transition-colors hover:bg-lime-400 hover:text-stone-950"
+                class="rounded-full border border-[#a3e635]/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#a3e635] transition-colors hover:bg-[#a3e635] hover:text-[#08070b]"
               >
                 Log in
               </.link>
@@ -95,16 +109,22 @@ defmodule KusaDataWeb.Layouts do
             phx-click={JS.toggle(to: "#mobile-nav")}
             aria-label="Toggle navigation"
             aria-expanded="false"
-            class="-mr-2 inline-flex size-9 items-center justify-center rounded-none text-stone-400 transition-colors hover:bg-stone-800/60 hover:text-stone-100 md:hidden"
+            class="-mr-2 inline-flex size-9 items-center justify-center rounded-full text-[#9a95b0] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[#f5f3ff] md:hidden"
           >
             <.icon name="hero-bars-3" class="size-5" />
           </button>
         </div>
 
-        <div id="mobile-nav" hidden class="border-t border-stone-800/70 md:hidden">
+        <div id="mobile-nav" hidden class="border-t border-[rgba(255,255,255,0.08)] md:hidden">
           <nav class="mx-auto flex max-w-6xl flex-col px-4 py-2 sm:px-6">
             <.nav_link to={~p"/"} active={@nav == :tournaments} mobile>Tournaments</.nav_link>
             <.nav_link to={~p"/rankings"} active={@nav == :rankings} mobile>Rankings</.nav_link>
+            <.nav_link to={~p"/atlas"} active={@nav == :atlas} mobile>
+              <span class="inline-flex items-center gap-1.5">
+                Atlas
+                <span class="rounded-full bg-[#a3e635] px-1.5 py-0.5 text-[9px] font-bold leading-none tracking-widest text-[#08070b]">NEW</span>
+              </span>
+            </.nav_link>
             <%= if @current_user do %>
               <.nav_link to={~p"/your-tournaments"} active={@nav == :your} mobile>Saved</.nav_link>
               <.nav_link to={~p"/leagues"} active={@nav == :leagues} mobile>Leagues</.nav_link>
@@ -117,9 +137,9 @@ defmodule KusaDataWeb.Layouts do
         {render_slot(@inner_block)}
       </main>
 
-      <footer class="mt-16 border-t border-stone-800/70">
-        <div class="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-8 text-xs text-stone-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span class="font-medium tracking-tight text-stone-500">
+      <footer class="mt-16 border-t border-[rgba(255,255,255,0.08)]">
+        <div class="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-8 text-xs text-[#9a95b0] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <span class="font-medium tracking-tight text-[#9a95b0]">
             KUSA&nbsp;DATA · Melee tournament directory
           </span>
           <span>
@@ -128,7 +148,7 @@ defmodule KusaDataWeb.Layouts do
               href="https://start.gg"
               target="_blank"
               rel="noopener noreferrer"
-              class="transition-colors hover:text-stone-300"
+              class="transition-colors hover:text-[#f5f3ff]"
             >start.gg</a>
           </span>
         </div>
@@ -151,16 +171,16 @@ defmodule KusaDataWeb.Layouts do
         :classes,
         cond do
           assigns.mobile and assigns.active ->
-            "border-l border-lime-400 pl-3 text-stone-100"
+            "border-l-2 border-[#a3e635] pl-3 text-[#f5f3ff]"
 
           assigns.mobile ->
-            "border-l border-transparent pl-3 text-stone-500 hover:text-stone-200"
+            "border-l border-transparent pl-3 text-[#9a95b0] hover:text-[#f5f3ff]"
 
           assigns.active ->
-            "relative border-b-2 border-lime-400 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-stone-100"
+            "relative border-b-2 border-[#a3e635] py-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#f5f3ff] after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:w-full after:bg-[#a3e635] after:content-['']"
 
           true ->
-            "relative py-2 text-sm font-semibold uppercase tracking-[0.08em] text-stone-500 transition-colors hover:text-stone-200"
+            "relative py-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#9a95b0] transition-colors hover:text-[#f5f3ff]"
         end
       )
 

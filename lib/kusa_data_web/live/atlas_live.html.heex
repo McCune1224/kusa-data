@@ -1,0 +1,45 @@
+<Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
+  <div class="desk-grid animate-fade-up">
+    <div class="mb-5 flex items-center justify-between border-y border-stone-800 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-500">
+      <span><span class="mr-2 inline-block size-2 bg-lime-400"></span>Melee geography</span>
+      <span class="hidden sm:inline">Atlas</span>
+      <span class="text-orange-300">12 — Atlas</span>
+    </div>
+
+    <section>
+      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-lime-300">
+        Where the scene lives
+      </p>
+      <div class="mt-2 flex flex-wrap items-end justify-between gap-4">
+        <h1 class="text-4xl font-black uppercase tracking-[-0.05em] text-stone-50 sm:text-5xl">
+          <%= if @view == :network do %>
+            Player network
+          <% else %>
+            Atlas
+          <% end %>
+        </h1>
+        <%= if @view == :network do %>
+          <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/atlas"}>
+            Map view
+          </.btn>
+        <% end %>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <%= if @error do %>
+        <.empty_state icon="hero-globe-americas" title="No atlas data">
+          <:body>The start.gg API may be unavailable right now — try again in a moment.</:body>
+        </.empty_state>
+      <% else %>
+        <div class="relative">
+          <%= if @loading do %>
+            <.skeleton class="h-64 w-full rounded-xl" />
+          <% end %>
+          <div id="atlas-canvas" phx-hook="AtlasHook" phx-update="ignore" class="atlas-canvas">
+          </div>
+        </div>
+      <% end %>
+    </section>
+  </div>
+</Layouts.app>

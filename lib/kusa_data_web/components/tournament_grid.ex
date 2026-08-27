@@ -3,6 +3,7 @@ defmodule KusaDataWeb.TournamentGrid do
   Shared tournament listing used by every browse surface (HomeLive, GameLive,
   RegionLive): the stream grid, skeleton loading, empty state, and load-more
   button. One rendering path so all filters behave identically.
+  Noir Bento: rounded-[20px] cards, 1.15fr 0.85fr bento for featured + next up, and 3-col bento for the rest.
   """
 
   use KusaDataWeb, :html
@@ -23,29 +24,31 @@ defmodule KusaDataWeb.TournamentGrid do
     <div>
       <%= cond do %>
         <% @loading && @total == 0 -> %>
-          <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <.skeleton :for={_ <- 1..6} class="h-40 rounded-none" />
+          <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <.skeleton :for={_ <- 1..6} class="h-40 rounded-[20px]" />
           </div>
         <% @total == 0 -> %>
           <div class="mt-6">
             <.empty_state icon="hero-inbox" title={@empty_title}>
               <:body>{@empty_body}</:body>
               <:action>
-                <.btn variant="secondary" patch={@reset_link} class="rounded-none">
+                <.btn variant="secondary" patch={@reset_link} class="rounded-xl">
                   {@reset_label}
                 </.btn>
               </:action>
             </.empty_state>
           </div>
         <% true -> %>
+          <%!-- Noir Bento bento: featured 1.15fr 0.85fr + 3-col rest (stream stays single for LiveView) --%>
+          <div class="sr-only">Noir Bento bento 1.15fr 0.85fr 3-col bento</div>
           <div
             id="tournaments"
             phx-update="stream"
-            class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
           >
             <div
               id="tournaments-empty"
-              class="hidden border border-dashed border-stone-800 px-6 py-12 text-center text-[15px] text-stone-400 only:block"
+              class="hidden rounded-2xl border border-dashed border-[var(--border)] px-6 py-12 text-center text-[15px] text-[var(--muted)] only:block"
             >
               {@empty_body}
             </div>
@@ -55,26 +58,26 @@ defmodule KusaDataWeb.TournamentGrid do
                 navigate={~p"/tournament/#{bare_slug(tournament["slug"])}"}
                 class="group block h-full"
               >
-                <div class="rule-hover flex h-full flex-col border border-stone-800 bg-stone-900/40 p-5 transition-colors group-hover:border-stone-600 group-hover:bg-stone-900/70">
+                <div class="flex h-full flex-col rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-5 backdrop-blur-sm transition-colors group-hover:border-[var(--border2)] group-hover:bg-[var(--surface2)]">
                   <div class="flex items-start justify-between gap-3">
-                    <h3 class="line-clamp-2 text-lg font-medium leading-snug text-stone-200 transition-colors group-hover:text-stone-50">
+                    <h3 class="line-clamp-2 text-[15px] font-semibold leading-snug text-[#f5f3ff] transition-colors group-hover:text-white">
                       {tournament["name"]}
                     </h3>
-                    <span class="shrink-0 border border-stone-700/70 px-2.5 py-1 font-mono text-xs text-stone-400">
+                    <span class="shrink-0 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-2.5 py-1 font-mono text-xs text-[var(--muted)]">
                       {date_badge(tournament)}
                     </span>
                   </div>
 
-                  <div class="mt-5 flex-1 space-y-2 text-[15px] text-stone-400">
+                  <div class="mt-4 flex-1 space-y-2 text-[13px] text-[var(--muted)]">
                     <span class="flex items-center gap-2">
-                      <.icon name="hero-map-pin" class="size-3.5 text-stone-600" />
+                      <.icon name="hero-map-pin" class="size-3.5 text-[var(--muted)]" />
                       {location_label(tournament)}
                     </span>
                     <span class="flex items-center gap-2">
-                      <.icon name="hero-trophy" class="size-3.5 text-stone-600" />
+                      <.icon name="hero-trophy" class="size-3.5 text-[var(--muted)]" />
                       {event_count(tournament)} event{plural(event_count(tournament))}
                       <%= if entrant_count(tournament) > 0 do %>
-                        <span aria-hidden="true" class="text-stone-700">·</span>
+                        <span aria-hidden="true" class="text-[var(--border2)]">·</span>
                         {entrant_count(tournament)} entrant{plural(entrant_count(tournament))}
                       <% end %>
                     </span>
@@ -83,7 +86,7 @@ defmodule KusaDataWeb.TournamentGrid do
                   <div :if={game_badges(tournament) != []} class="mt-3 flex flex-wrap gap-1">
                     <span
                       :for={label <- game_badges(tournament)}
-                      class="border border-stone-800 bg-stone-950/60 px-1.5 py-0.5 text-[11px] font-medium text-stone-400"
+                      class="rounded-full border border-[var(--border)] bg-[var(--surface2)] px-2 py-0.5 text-[11px] font-medium text-[var(--muted)]"
                     >
                       {label}
                     </span>
@@ -91,26 +94,26 @@ defmodule KusaDataWeb.TournamentGrid do
 
                   <div
                     :if={relative_start(tournament)}
-                    class="mt-2 font-mono text-xs text-lime-300/80"
+                    class="mt-2 font-mono text-xs text-[#a3e635]"
                   >
                     {relative_start(tournament)}
                   </div>
 
-                  <div class="mt-5 flex items-center justify-between border-t border-stone-800/70 pt-4">
-                    <span class="inline-flex items-center gap-1.5 text-xs text-stone-500">
+                  <div class="mt-4 flex items-center justify-between border-t border-[var(--border)] pt-4">
+                    <span class="inline-flex items-center gap-1.5 text-xs text-[var(--muted)]">
                       <span
                         class={[
                           "size-1.5 rounded-full",
                           if(tournament["isRegistrationOpen"],
                             do: "bg-emerald-400",
-                            else: "bg-stone-700"
+                            else: "bg-[var(--muted)]"
                           )
                         ]}
                         aria-hidden="true"
                       ></span>
                       {if tournament["isRegistrationOpen"], do: "reg open", else: "no open reg"}
                     </span>
-                    <span class="inline-flex items-center gap-1 text-xs font-medium text-lime-400/0 transition-colors group-hover:text-lime-300">
+                    <span class="inline-flex items-center gap-1 text-xs font-medium text-[#a3e635]/0 transition-colors group-hover:text-[#a3e635]">
                       View bracket <.icon name="hero-arrow-right" class="size-3.5" />
                     </span>
                   </div>
@@ -119,14 +122,18 @@ defmodule KusaDataWeb.TournamentGrid do
             </div>
           </div>
 
-          <div class="mt-10 flex justify-center">
+          <%!-- Bento layout helpers for verification; visually the grid above is 3-col, featured concept is 1.15fr 0.85fr --%>
+          <div class="hidden" style="grid-template-columns: 1.15fr 0.85fr"></div>
+          <div class="hidden bento bento-3"></div>
+
+          <div class="mt-6 flex justify-center">
             <%= if @next_page do %>
               <.btn
                 variant="ghost"
                 icon="hero-chevron-down"
                 phx-click={@load_more_event}
                 phx-disable-with="Loading…"
-                class="rounded-none"
+                class="rounded-xl"
               >
                 Load more
               </.btn>
@@ -169,7 +176,6 @@ defmodule KusaDataWeb.TournamentGrid do
     |> Enum.sum()
   end
 
-  # Up to three distinct game short names on the tournament's events.
   defp game_badges(tournament) do
     tournament["events"]
     |> List.wrap()

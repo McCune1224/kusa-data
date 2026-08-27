@@ -283,6 +283,72 @@ defmodule KusaData.Players do
     end)
   end
 
+  @doc """
+  Focal ego-network for the Atlas graph: the player plus their opponents as
+  nodes, connected by head-to-head edges.
+
+  Opponents without a resolved player id are excluded from the graph and
+  reported under `excluded_unresolved`, matching the repo-wide discipline of
+  never counting tag-only entrants that lack a player id.
+  """
+  @spec atlas(integer(), map()) :: {:ok, map(), :hit | :miss | :bypass} | {:error, term()}
+  def atlas(player_id, opts \\ %{})
+
+  def atlas(player_id, opts) when is_integer(player_id) do
+    game = opts[:game]
+    key = "atlas:player:#{player_id}:network:#{game}"
+    Cache.fetch(key, @history_ttl, fn -> build_atlas(player_id, game) end)
+  end
+
+  def atlas(_player_id, _opts), do: {:error, :invalid_id}
+
+  defp build_atlas(player_id, game) do
+    with {:ok, summary} <- summarize(player_id, game) do
+      focal = %{
+        "player_id" => summary["player_id"],
+        "gamer_tag" => summary["gamer_tag"],
+        "is_focal" => true,
+        "weight" => summary["wins"] + summary["losses"]
+      }
+
+      {nodes, edges, excluded} =
+        Enum.reduce(summary["opponents"] || [], {[focal], [], 0}, fn opp, {ns, es, ex} ->
+          case opp["opponent_player_id"] do
+            nil ->
+              {ns, es, ex + 1}
+
+            opp_id ->
+              node = %{
+                "player_id" => opp_id,
+                "gamer_tag" => opp["name"],
+                "is_focal" => false,
+                "weight" => opp["total"]
+              }
+
+              edge = %{
+                "source" => player_id,
+                "target" => opp_id,
+                "kind" => "h2h",
+                "weight" => opp["wins"] + opp["losses"],
+                "wins" => opp["wins"],
+                "losses" => opp["losses"]
+              }
+
+              {[node | ns], [edge | es], ex}
+          end
+        end)
+
+      {:ok,
+       %{
+         "player_id" => player_id,
+         "gamer_tag" => summary["gamer_tag"],
+         "nodes" => Enum.reverse(nodes),
+         "edges" => Enum.reverse(edges),
+         "excluded_unresolved" => excluded
+       }}
+    end
+  end
+
   defp summarize(player_id, game) do
     with {:ok, identity} <- fetch_identity(player_id) do
       with {:ok, history, _} <- history(player_id, %{game: game}) do

@@ -204,13 +204,13 @@ defmodule KusaDataWeb.LeagueLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div>
+      <div class="animate-fade-up space-y-6">
         <%= if @loading do %>
           <div class="space-y-4">
-            <.skeleton class="h-3 w-24" />
-            <.skeleton class="mt-4 h-9 w-64" />
-            <div class="mt-8 grid gap-4 lg:grid-cols-2">
-              <.skeleton :for={_ <- 1..2} class="h-48 rounded-xl" />
+            <.skeleton class="h-3 w-24 rounded-full" />
+            <.skeleton class="mt-4 h-9 w-64 rounded-[16px]" />
+            <div class="mt-6 grid gap-4 lg:grid-cols-2">
+              <.skeleton :for={_ <- 1..4} class="h-44 rounded-[20px]" />
             </div>
           </div>
         <% else %>
@@ -218,7 +218,9 @@ defmodule KusaDataWeb.LeagueLive do
             <.empty_state icon="hero-exclamation-triangle" title="League not found">
               <:body>You may not own this league, or it was deleted.</:body>
               <:action>
-                <.btn variant="primary" navigate={~p"/leagues"}>Your leagues</.btn>
+                <.btn variant="primary" navigate={~p"/leagues"} class="rounded-full">
+                  Your leagues
+                </.btn>
               </:action>
             </.empty_state>
           <% else %>
@@ -227,73 +229,89 @@ defmodule KusaDataWeb.LeagueLive do
                 <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/leagues"}>
                   Leagues
                 </.btn>
-                <h1 class="mt-3 text-3xl font-semibold tracking-tight text-stone-50">
+                <h1 class="mt-3 text-3xl font-black tracking-tight text-[var(--text)] sm:text-4xl">
                   {@league.name}
                 </h1>
-                <p class="mt-1 text-sm text-stone-400">
-                  {length(@members)} members · {length(@tournaments)} tournaments · {length(@seasons)} seasons
-                </p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <span class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--muted)]">{length(
+                    @members
+                  )} members</span>
+                  <span class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-medium text-[var(--muted)]">{length(
+                    @tournaments
+                  )} tournaments</span>
+                  <span class="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-1 text-xs font-semibold text-[var(--accent)]">{length(
+                    @seasons
+                  )} seasons</span>
+                </div>
               </div>
               <button
                 type="button"
                 phx-click="delete-league"
-                class="rounded-none border border-rose-500/40 px-3 py-1.5 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/10"
-              >
-                Delete league
-              </button>
+                class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/15"
+              >Delete league</button>
             </div>
 
-            <div class="mt-8 grid gap-6 lg:grid-cols-2">
-              <div class="space-y-6">
-                <.card class="p-5">
-                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+            <div class="grid gap-4 lg:grid-cols-2">
+              <div class="space-y-4">
+                <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur">
+                  <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
                     Import a tournament
                   </h2>
-                  <p class="mt-2 text-sm text-stone-500">
+                  <p class="mt-2 text-sm leading-relaxed text-[var(--muted)]">
                     One-click import links known player ids; unresolved tags are listed for review.
                   </p>
                   <.form
                     for={@import_form}
                     id="import-form"
                     phx-submit="import"
-                    class="mt-3 flex gap-2"
+                    class="mt-4 flex gap-2"
                   >
                     <.input
                       field={@import_form[:slug]}
                       type="text"
                       placeholder="tournament/slug"
-                      class="h-10 flex-1 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
+                      class="h-10 flex-1 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)] placeholder:text-[var(--muted)]"
                     />
-                    <.btn variant="primary" type="submit" class="rounded-none">Import</.btn>
+                    <.btn variant="primary" type="submit" class="rounded-full">Import</.btn>
                   </.form>
-                </.card>
+                </div>
 
-                <.card class="p-5">
+                <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur">
                   <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                    <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
                       Members
                     </h2>
-                    <span class="font-mono text-[13px] text-stone-500">{length(@members)}</span>
+                    <span class="rounded-full border border-[var(--border)] bg-[var(--surface2)] px-2.5 py-1 font-mono text-xs text-[var(--muted)]">{length(
+                      @members
+                    )}</span>
                   </div>
-                  <div class="mt-4 space-y-1">
+                  <div class="mt-4 grid gap-2">
                     <div
                       :for={member <- @members}
-                      class="flex items-center justify-between gap-3 rounded-md px-3 py-2.5 hover:bg-stone-900/60"
+                      class="flex items-center justify-between gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface2)]/70 px-3 py-2.5"
                     >
-                      <span class="truncate text-[15px] text-stone-300">
-                        {member.canonical_tag || "player #{member.player_id}"}
+                      <span class="flex items-center gap-2.5 truncate">
+                        <.avatar
+                          name={member.canonical_tag || "P#{member.player_id}"}
+                          class="size-7 text-xs"
+                        />
+                        <span class="truncate text-[14px] font-medium text-[var(--text)]">{member.canonical_tag ||
+                          "player #{member.player_id}"}</span>
                       </span>
                       <button
                         type="button"
                         phx-click="remove-member"
                         phx-value-id={member.id}
-                        class="shrink-0 text-stone-500 transition-colors hover:text-rose-400"
+                        class="flex size-7 shrink-0 items-center justify-center rounded-full border border-[var(--border)] text-[var(--muted)] transition-colors hover:border-rose-500/30 hover:text-rose-300"
                         aria-label="Remove member"
-                      >
-                        <.icon name="hero-x-mark" class="size-4" />
-                      </button>
+                      ><.icon name="hero-x-mark" class="size-3.5" /></button>
                     </div>
-                    <div :if={@members == []} class="text-sm text-stone-600">No members yet.</div>
+                    <div
+                      :if={@members == []}
+                      class="rounded-[14px] border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--muted)]"
+                    >
+                      No members yet.
+                    </div>
                   </div>
                   <.form
                     for={@member_form}
@@ -305,97 +323,109 @@ defmodule KusaDataWeb.LeagueLive do
                       field={@member_form[:player_id]}
                       type="text"
                       placeholder="player id"
-                      class="h-10 w-28 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
+                      class="h-10 w-28 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[var(--text)]"
                     />
                     <.input
                       field={@member_form[:canonical_tag]}
                       type="text"
                       placeholder="canonical tag"
-                      class="h-10 flex-1 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
+                      class="h-10 flex-1 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[var(--text)]"
                     />
-                    <.btn variant="secondary" type="submit" class="rounded-none">Add</.btn>
+                    <.btn variant="secondary" type="submit" class="rounded-full">Add</.btn>
                   </.form>
-                </.card>
+                </div>
               </div>
 
-              <div class="space-y-6">
-                <.card class="p-5">
-                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+              <div class="space-y-4">
+                <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur">
+                  <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
                     New season
                   </h2>
                   <.form
                     for={@season_form}
                     id="season-form"
                     phx-submit="create-season"
-                    class="mt-3 space-y-3"
+                    class="mt-4 space-y-3"
                   >
                     <.input
                       field={@season_form[:name]}
                       type="text"
                       placeholder="2026 Season 1"
-                      class="h-10 w-full rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
+                      class="h-10 w-full rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)] placeholder:text-[var(--muted)]"
                     />
                     <div class="flex gap-2">
                       <.input
                         field={@season_form[:start_at]}
                         type="datetime-local"
-                        class="h-10 flex-1 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
+                        class="h-10 flex-1 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[var(--text)]"
                       />
                       <.input
                         field={@season_form[:end_at]}
                         type="datetime-local"
-                        class="h-10 flex-1 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
+                        class="h-10 flex-1 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[var(--text)]"
                       />
                     </div>
-                    <.btn variant="secondary" type="submit" class="rounded-none w-full">
+                    <.btn variant="secondary" type="submit" class="w-full rounded-full">
                       Create season
                     </.btn>
                   </.form>
-
-                  <div class="mt-5 border-t border-stone-800/70 pt-4">
-                    <h3 class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+                  <div class="mt-5 border-t border-[var(--border)] pt-4">
+                    <h3 class="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
                       Seasons
                     </h3>
-                    <div :for={season <- @seasons} class="mt-2 text-sm text-stone-400">
-                      {season.name} · {format_date(season.start_at)} → {format_date(season.end_at)}
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <span
+                        :for={season <- @seasons}
+                        class="rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 py-1.5 text-xs font-medium text-[var(--text)]"
+                      >{season.name} · {format_date(season.start_at)} → {format_date(season.end_at)}</span>
+                      <span :if={@seasons == []} class="text-sm text-[var(--muted)]">No seasons yet.</span>
                     </div>
                   </div>
-                </.card>
+                </div>
 
-                <.card class="p-5">
-                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-                    Season standings
-                  </h2>
+                <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface2)]/70 p-5 backdrop-blur">
+                  <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                      Season standings
+                    </h2>
+                    <span class="rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[#08070b]">Bento</span>
+                  </div>
                   <%= if @standings == nil do %>
-                    <p class="mt-3 text-sm text-stone-500">Create a season to compute standings.</p>
+                    <p class="mt-4 rounded-[14px] border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--muted)]">
+                      Create a season to compute standings.
+                    </p>
                   <% else %>
                     <%= if @standings == :unavailable do %>
-                      <p class="mt-3 text-sm text-stone-500">
+                      <p class="mt-4 rounded-[14px] border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--muted)]">
                         Standings unavailable (rankings data not reachable).
                       </p>
                     <% else %>
-                      <div class="mt-4 space-y-1">
+                      <div class="mt-4 grid gap-2">
                         <div
                           :for={{rank, player} <- Enum.with_index(@standings, 1)}
-                          class="flex items-center justify-between gap-3 rounded-md px-3 py-2.5 hover:bg-stone-900/60"
+                          class="flex items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface)]/80 px-3 py-3 transition-colors hover:border-[var(--border2)]"
                         >
-                          <span class="w-8 shrink-0 font-mono text-sm font-bold text-stone-500">
-                            {rank}
-                          </span>
+                          <span class={[
+                            "flex size-7 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold",
+                            if(rank <= 3,
+                              do:
+                                "border-[var(--accent)]/30 bg-[var(--accent)]/10 text-[var(--accent)]",
+                              else: "border-[var(--border)] bg-[var(--surface2)] text-[var(--muted)]"
+                            )
+                          ]}>{rank}</span>
+                          <.avatar name={player["gamer_tag"] || "?"} class="size-7 text-xs" />
                           <.link
                             navigate={~p"/player/#{player["player_id"]}"}
-                            class="min-w-0 flex-1 truncate text-[15px] text-stone-200 hover:text-lime-300"
-                          >
-                            {player["gamer_tag"]}
-                          </.link>
-                          <span class="shrink-0 font-mono text-sm font-semibold text-stone-100">
-                            {player["rating"]}
-                          </span>
+                            class="min-w-0 flex-1 truncate text-[14px] font-medium text-[var(--text)] hover:text-[var(--accent)]"
+                          >{player["gamer_tag"]}</.link>
+                          <span class="shrink-0 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-2.5 py-1 font-mono text-xs font-semibold text-[var(--text)]">{player[
+                            "rating"
+                          ]}</span>
                         </div>
                       </div>
                     <% end %>
                   <% end %>
-                </.card>
+                </div>
               </div>
             </div>
           <% end %>

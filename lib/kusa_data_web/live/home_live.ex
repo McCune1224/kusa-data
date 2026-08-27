@@ -352,12 +352,12 @@ defmodule KusaDataWeb.HomeLive do
 
   defp tab_class(active?) do
     base =
-      "flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors rounded-none"
+      "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
 
     if active? do
-      "#{base} bg-lime-400 text-stone-950"
+      "#{base} bg-[#a3e635] text-[#08070b]"
     else
-      "#{base} text-stone-400 hover:bg-stone-800/60 hover:text-stone-100"
+      "#{base} border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border2)] hover:text-[#f5f3ff]"
     end
   end
 

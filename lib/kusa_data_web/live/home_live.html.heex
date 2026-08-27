@@ -1,31 +1,31 @@
 <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-  <div class="desk-grid animate-fade-up">
-    <div class="mb-5 flex items-center justify-between border-y border-stone-800 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-      <span><span class="mr-2 inline-block size-2 bg-lime-400"></span>Live bracket index</span>
-      <span class="hidden sm:inline">Melee / 2026</span>
-      <span class="text-orange-300">01 — Discover</span>
-    </div>
-
-    <section class="border-b border-stone-800 pb-8 pt-4">
-      <div class="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-lime-300">
-            The competitive Melee desk
-          </p>
-          <h1 class="mt-3 max-w-3xl text-5xl font-black uppercase leading-[0.9] tracking-[-0.06em] text-stone-50 sm:text-7xl">
-            Find your next<br /><span class="text-lime-400">bracket.</span>
+  <div class="animate-fade-up space-y-6">
+    <span class="sr-only">Noir Bento</span>
+    <!-- Noir Bento Hero — Find your next bracket -->
+    <section class="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 lg:p-10">
+      <div class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
+          <div class="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#a3e635]">
+            <span class="size-2 rounded-full bg-[#a3e635]"></span>
+            The competitive Melee desk — Live
+          </div>
+          <h1 class="mt-3 font-black leading-[0.9] tracking-[-0.06em] text-[#f5f3ff] text-[44px] sm:text-[56px] lg:text-[64px]">
+            Find your next<br /><span class="text-[#a3e635]">bracket.</span>
           </h1>
+          <p class="mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
+            Tournament discovery with graph-powered scouting. Every region, every rivalry, every run — connected.
+          </p>
+          <div class="mt-5 hidden items-center gap-2 text-[11px] text-[var(--muted)] lg:flex">
+            <span class="size-2 rounded-full bg-[#a3e635]"></span>
+            Noir Bento bento layout · Atlas.Graph preview
+          </div>
         </div>
-        <div class="lg:justify-self-end">
-          <.form
-            for={@link_form}
-            id="link-jump-form"
-            phx-submit="link-jump"
-            class="w-full lg:w-96"
-          >
+
+        <div class="w-full shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4 lg:w-[360px]">
+          <.form for={@link_form} id="link-jump-form" phx-submit="link-jump" class="w-full">
             <label
               for="link-jump-input"
-              class="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500"
+              class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]"
             >
               Paste any start.gg link or slug
             </label>
@@ -36,13 +36,13 @@
                 type="text"
                 placeholder="start.gg/tournament/…"
                 autocomplete="off"
-                class="h-11 w-full rounded-none border border-stone-700/70 bg-stone-950 px-4 text-sm text-stone-200 placeholder-stone-600 focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
+                class="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
               />
               <.btn
-                variant="secondary"
+                variant="primary"
                 type="submit"
                 icon_right="hero-arrow-right"
-                class="rounded-none shrink-0 px-5"
+                class="shrink-0 rounded-xl"
               >
                 Open
               </.btn>
@@ -51,15 +51,15 @@
 
           <div
             id="account-note"
-            class="mt-4 w-full border border-stone-800 bg-stone-900/40 px-4 py-3 lg:w-96"
+            class="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-3"
           >
-            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-500">
+            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
               No account needed to browse
             </p>
-            <p class="mt-1.5 text-[13px] leading-relaxed text-stone-400">
+            <p class="mt-1.5 text-[13px] leading-relaxed text-[var(--muted)]">
               Everything here — search, brackets, stats, rankings — is open.
               An optional free login only unlocks personal extras:
-              bookmark tournaments to <span class="text-stone-300">Your tournaments</span>,
+              bookmark tournaments to <span class="text-[#f5f3ff]">Your tournaments</span>,
               get pinged when watched players or events post results, build
               leagues with your scene's standings, and keep linked tags in
               one profile via player settings.
@@ -67,40 +67,77 @@
           </div>
         </div>
       </div>
+
+      <!-- Stats strip — 24/7, 1.2k scenes, Graph -->
+      <div class="mt-8 grid grid-cols-3 gap-3">
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4">
+          <div class="font-mono text-2xl font-bold text-[#f5f3ff]">24/7</div>
+          <div class="text-[11px] font-medium uppercase tracking-widest text-[var(--muted)]">
+            Bracket watch
+          </div>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4">
+          <div class="font-mono text-2xl font-bold text-[#f5f3ff]">
+            1.2k <span class="text-sm font-normal text-[var(--muted)]">scenes</span>
+          </div>
+          <div class="text-[11px] font-medium uppercase tracking-widest text-[var(--muted)]">
+            US Atlas live
+          </div>
+        </div>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-4">
+          <div class="font-mono text-2xl font-bold text-[#f5f3ff]">
+            Graph <span class="text-[#a3e635]">●</span>
+          </div>
+          <div class="text-[11px] font-medium uppercase tracking-widest text-[var(--muted)]">
+            H2H network
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section class="border-b border-stone-800 py-6">
-      <div class="flex flex-wrap items-center gap-1 rounded-xl border border-stone-800 bg-stone-900/40 p-1">
+    <!-- Controls: Upcoming/Past/Search tabs as pill toggles in card2 + game filter chips -->
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] p-2">
+      <div class="flex flex-wrap items-center gap-1">
         <.link
-          patch={game_chip_path(%{mode: :upcoming, zip: @zip, radius: @radius}, @game)}
-          class={tab_class(@mode == :upcoming)}
+          patch={browse_path(:upcoming, zip: @zip, radius: @radius, game: @game)}
+          class={tab_class(@mode == :upcoming) <> " rounded-full"}
         >
           <.icon name="hero-bolt" class="size-4" />
           <span>Upcoming</span>
         </.link>
-        <.link patch={browse_path(:past, game: @game)} class={tab_class(@mode == :past)}>
+        <.link
+          patch={browse_path(:past, game: @game)}
+          class={tab_class(@mode == :past) <> " rounded-full"}
+        >
           <.icon name="hero-clock" class="size-4" />
           <span>Past</span>
         </.link>
         <.link
           patch={browse_path(:search, q: @q, game: @game)}
-          class={tab_class(@mode == :search)}
+          class={tab_class(@mode == :search) <> " rounded-full"}
         >
           <.icon name="hero-magnifying-glass" class="size-4" />
           <span>Search</span>
         </.link>
-        <span class="mx-1 hidden h-5 w-px bg-stone-800 sm:block"></span>
+        <span class="mx-1 hidden h-5 w-px bg-[var(--border)] sm:block"></span>
         <.link
           navigate={~p"/regions"}
-          class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-stone-400 transition-colors hover:bg-stone-800/60 hover:text-stone-100"
+          class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-1.5 text-sm font-medium text-[var(--muted)] transition-colors hover:border-[var(--border2)] hover:text-[#f5f3ff]"
         >
           <.icon name="hero-globe-americas" class="size-4" />
           <span>Regions</span>
         </.link>
+        <.link
+          navigate={~p"/atlas"}
+          class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-bold tracking-wide text-[var(--muted)] transition-colors hover:border-[var(--border2)] hover:text-[#f5f3ff]"
+        >
+          Atlas
+          <span class="rounded-full bg-[#a3e635] px-1 py-0.5 text-[9px] font-bold leading-none text-[#08070b]">NEW</span>
+        </.link>
       </div>
 
       <div id="game-filter" class="mt-3 flex flex-wrap items-center gap-2">
-        <span class="mr-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+        <span class="mr-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
           Game
         </span>
         <% chips =
@@ -130,203 +167,205 @@
             class={[
               "rounded-full px-3 py-1 text-[13px] font-medium transition-colors",
               active_game?(chip.slug, @game) &&
-                "bg-lime-400 text-stone-950 hover:bg-lime-300",
+                "bg-[#a3e635] bg-lime-400 text-[#08070b] hover:bg-[#b8f05a]",
               !active_game?(chip.slug, @game) &&
-                "border border-stone-800 bg-stone-900/40 text-stone-400 hover:border-stone-700 hover:text-stone-100"
+                "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border2)] hover:text-[#f5f3ff]"
             ]}
           >
             {chip.short_name}
           </.link>
         <% end %>
       </div>
+    </section>
 
-      <div class="mt-6">
-        <%= cond do %>
-          <% @mode == :upcoming -> %>
-            <div class="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
-              <div>
-                <h2 class="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-400">
-                  01 / Find nearby
-                </h2>
-                <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-stone-400">
-                  Tournaments within a radius of any postal code.
-                </p>
-
-                <.form
-                  for={@nearby_form}
-                  id="nearby-form"
-                  phx-submit="nearby-search"
-                  phx-change="radius-change"
-                  class="mt-4 flex max-w-xl flex-col gap-3 sm:flex-row"
-                >
-                  <.input
-                    field={@nearby_form[:zip]}
-                    type="text"
-                    placeholder="Zip or postal code"
-                    inputmode="numeric"
-                    autocomplete="postal-code"
-                    class="h-11 w-full rounded-none border border-stone-700/70 bg-stone-950 px-4 text-sm text-stone-200 placeholder-stone-600 focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
-                  />
-                  <.input
-                    field={@nearby_form[:radius]}
-                    type="select"
-                    options={Enum.map(@radii, fn r -> {r, r} end)}
-                    class="h-11 w-full rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm text-stone-200 focus:border-lime-400/50 sm:w-32"
-                  />
-                  <.btn variant="primary" size="lg" type="submit" class="rounded-none">
-                    Search nearby
-                  </.btn>
-                </.form>
-
-                <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-                  <span class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
-                    Try a city
-                  </span>
-                  <%= for {city, zip, radius} <- [
-                    {"Minneapolis", "55401", "50mi"},
-                    {"Chicago", "60601", "100mi"},
-                    {"New York", "10001", "100mi"},
-                    {"Los Angeles", "90012", "100mi"}
-                  ] do %>
-                    <.link
-                      patch={browse_path(:upcoming, zip: zip, radius: radius, game: @game)}
-                      class="inline-flex items-center gap-1.5 text-[15px] text-stone-300 transition-colors hover:text-lime-300"
-                    >
-                      <.icon name="hero-map-pin" class="size-3.5 text-stone-600" />
-                      {city}
-                    </.link>
-                  <% end %>
-                </div>
-              </div>
-
-              <div class="hidden shrink-0 border border-stone-800 bg-stone-950 px-5 py-4 md:block">
-                <p class="font-mono text-2xl text-lime-300">24/7</p>
-                <p class="mt-1 text-[10px] uppercase tracking-[0.16em] text-stone-500">
-                  Bracket watch
-                </p>
-              </div>
-            </div>
-          <% @mode == :past -> %>
+    <!-- Mode-specific panels — glass / rounded-xl inputs -->
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur-sm sm:p-6">
+      <%= cond do %>
+        <% @mode == :upcoming -> %>
+          <div class="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
             <div>
-              <h2 class="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-400">
-                02 / Past tournaments
+              <h2 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">
+                01 / Find nearby
               </h2>
-              <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-stone-400">
-                Finished brackets by date range, with a name/city/venue search and a
-                results-only switch.
+              <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
+                Tournaments within a radius of any postal code.
               </p>
 
               <.form
-                for={@past_form}
-                id="past-form"
-                phx-submit="past-search"
-                class="mt-4 flex max-w-3xl flex-col gap-3 md:flex-row md:items-end"
+                for={@nearby_form}
+                id="nearby-form"
+                phx-submit="nearby-search"
+                phx-change="radius-change"
+                class="mt-4 flex max-w-xl flex-col gap-3 sm:flex-row"
               >
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    From
-                  </label>
-                  <.input
-                    field={@past_form[:from]}
-                    type="date"
-                    class="h-11 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm text-stone-200 focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
-                  />
-                </div>
-                <div class="flex flex-col gap-1.5">
-                  <label class="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    To
-                  </label>
-                  <.input
-                    field={@past_form[:to]}
-                    type="date"
-                    class="h-11 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm text-stone-200 focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
-                  />
-                </div>
-                <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <label class="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    Name / city / venue
-                  </label>
-                  <.input
-                    field={@past_form[:q]}
-                    type="text"
-                    placeholder="genesis, chicago, convention center…"
-                    autocomplete="off"
-                    class="h-11 w-full rounded-none border border-stone-700/70 bg-stone-950 px-4 text-sm text-stone-200 placeholder-stone-600 focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
-                  />
-                </div>
-                <div class="flex h-11 items-center">
-                  <.input
-                    field={@past_form[:results_only]}
-                    type="checkbox"
-                    label="Results only"
-                    class="size-4 rounded-none accent-lime-400"
-                  />
-                </div>
-                <.btn variant="primary" size="lg" type="submit" class="rounded-none">
-                  Browse past
+                <.input
+                  field={@nearby_form[:zip]}
+                  type="text"
+                  placeholder="Zip or postal code"
+                  inputmode="numeric"
+                  autocomplete="postal-code"
+                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                />
+                <.input
+                  field={@nearby_form[:radius]}
+                  type="select"
+                  options={Enum.map(@radii, fn r -> {r, r} end)}
+                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#a3e635]/50 sm:w-32"
+                />
+                <.btn variant="primary" size="lg" type="submit" class="rounded-xl">
+                  Search nearby
                 </.btn>
               </.form>
 
               <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-                <span class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
-                  Quick ranges
+                <span class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Try a city
                 </span>
-                <%= for {label, from, to} <- quick_ranges() do %>
+                <%= for {city, zip, radius} <- [
+                  {"Minneapolis", "55401", "50mi"},
+                  {"Chicago", "60601", "100mi"},
+                  {"New York", "10001", "100mi"},
+                  {"Los Angeles", "90012", "100mi"}
+                ] do %>
                   <.link
-                    patch={browse_path(:past, from: from, to: to, game: @game)}
-                    class="inline-flex items-center gap-1.5 text-[15px] text-stone-300 transition-colors hover:text-lime-300"
+                    patch={browse_path(:upcoming, zip: zip, radius: radius, game: @game)}
+                    class="inline-flex items-center gap-1.5 text-[15px] text-[#f5f3ff] transition-colors hover:text-[#a3e635]"
                   >
-                    <.icon name="hero-calendar-days" class="size-3.5 text-stone-600" />
-                    {label}
+                    <.icon name="hero-map-pin" class="size-3.5 text-[var(--muted)]" />
+                    {city}
                   </.link>
                 <% end %>
               </div>
             </div>
-          <% @mode == :search -> %>
-            <div>
-              <h2 class="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-400">
-                03 / Search the archive
-              </h2>
-              <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-stone-400">
-                Hot search across tournament names, cities, and venues. The active
-                terms live in the URL, so refresh and back still reproduce them.
-              </p>
 
-              <.form
-                for={@search_form}
-                id="search-form"
-                phx-change="search-input"
-                class="mt-4 max-w-2xl"
-              >
-                <div class="relative">
-                  <span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-4">
-                    <.icon name="hero-magnifying-glass" class="size-5 text-stone-600" />
-                  </span>
-                  <.input
-                    field={@search_form[:q]}
-                    type="text"
-                    placeholder="Search tournaments, cities, venues…"
-                    autocomplete="off"
-                    phx-debounce="400"
-                    class="h-12 w-full rounded-none border border-stone-700/70 bg-stone-950 pl-12 pr-4 text-[15px] text-stone-200 placeholder-stone-600 focus:border-lime-400/50 focus:ring-2 focus:ring-lime-400/15"
-                  />
-                </div>
-              </.form>
+            <div class="hidden shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--surface2)] px-5 py-4 md:block">
+              <p class="font-mono text-2xl text-[#a3e635]">24/7</p>
+              <p class="mt-1 text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+                Bracket watch
+              </p>
             </div>
-        <% end %>
-      </div>
+          </div>
+        <% @mode == :past -> %>
+          <div>
+            <h2 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">
+              02 / Past tournaments
+            </h2>
+            <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
+              Finished brackets by date range, with a name/city/venue search and a
+              results-only switch.
+            </p>
+
+            <.form
+              for={@past_form}
+              id="past-form"
+              phx-submit="past-search"
+              class="mt-4 flex max-w-3xl flex-col gap-3 md:flex-row md:items-end"
+            >
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+                  From
+                </label>
+                <.input
+                  field={@past_form[:from]}
+                  type="date"
+                  class="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+                  To
+                </label>
+                <.input
+                  field={@past_form[:to]}
+                  type="date"
+                  class="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-3 text-sm text-[#f5f3ff] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                />
+              </div>
+              <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+                <label class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Name / city / venue
+                </label>
+                <.input
+                  field={@past_form[:q]}
+                  type="text"
+                  placeholder="genesis, chicago, convention center…"
+                  autocomplete="off"
+                  class="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                />
+              </div>
+              <div class="flex h-11 items-center">
+                <.input
+                  field={@past_form[:results_only]}
+                  type="checkbox"
+                  label="Results only"
+                  class="size-4 rounded border-[var(--border)] bg-[var(--surface2)] text-[#a3e635] accent-[#a3e635]"
+                />
+              </div>
+              <.btn variant="primary" size="lg" type="submit" class="rounded-xl">
+                Browse past
+              </.btn>
+            </.form>
+
+            <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+              <span class="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+                Quick ranges
+              </span>
+              <%= for {label, from, to} <- quick_ranges() do %>
+                <.link
+                  patch={browse_path(:past, from: from, to: to, game: @game)}
+                  class="inline-flex items-center gap-1.5 text-[15px] text-[#f5f3ff] transition-colors hover:text-[#a3e635]"
+                >
+                  <.icon name="hero-calendar-days" class="size-3.5 text-[var(--muted)]" />
+                  {label}
+                </.link>
+              <% end %>
+            </div>
+          </div>
+        <% @mode == :search -> %>
+          <div>
+            <h2 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">
+              03 / Search the archive
+            </h2>
+            <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
+              Hot search across tournament names, cities, and venues. The active
+              terms live in the URL, so refresh and back still reproduce them.
+            </p>
+
+            <.form
+              for={@search_form}
+              id="search-form"
+              phx-change="search-input"
+              class="mt-4 max-w-2xl"
+            >
+              <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-4">
+                  <.icon name="hero-magnifying-glass" class="size-5 text-[var(--muted)]" />
+                </span>
+                <.input
+                  field={@search_form[:q]}
+                  type="text"
+                  placeholder="Search tournaments, cities, venues…"
+                  autocomplete="off"
+                  phx-debounce="400"
+                  class="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] pl-12 pr-4 text-[15px] text-[#f5f3ff] placeholder:text-[var(--muted)] focus:border-[#a3e635]/50 focus:ring-2 focus:ring-[#a3e635]/15"
+                />
+              </div>
+            </.form>
+          </div>
+      <% end %>
     </section>
 
-    <section class="mt-10">
+    <!-- Tournament grid header + bento grid -->
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur-sm sm:p-6">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+          <p class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
             {mode_subtitle(%{mode: @mode, zip: @zip, place: @place, from: @from, to: @to, q: @q})}
           </p>
-          <h2 class="mt-2 text-2xl font-semibold tracking-tight text-stone-100">
+          <h2 class="mt-2 text-2xl font-semibold tracking-tight text-[#f5f3ff]">
             {mode_title(@mode)}
           </h2>
-          <p class="mt-1 text-[15px] text-stone-400">
+          <p class="mt-1 text-[15px] text-[var(--muted)]">
             {format_count(@total)}
             <%= if @mode == :upcoming do %>
               · {if @zip, do: "within #{@radius} of #{@zip}", else: "worldwide"}
@@ -338,12 +377,12 @@
           </p>
         </div>
         <div :if={@mode == :upcoming && @zip} class="flex gap-2">
-          <.btn variant="ghost" size="sm" patch={browse_path(:upcoming, [])} class="rounded-none">
+          <.btn variant="ghost" size="sm" patch={browse_path(:upcoming, [])} class="rounded-xl">
             Browse all upcoming
           </.btn>
         </div>
         <div :if={@mode == :past && (@from || @to || @q || @results_only)} class="flex gap-2">
-          <.btn variant="ghost" size="sm" patch={browse_path(:past, [])} class="rounded-none">
+          <.btn variant="ghost" size="sm" patch={browse_path(:past, [])} class="rounded-xl">
             Clear past filters
           </.btn>
         </div>

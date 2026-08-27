@@ -34,6 +34,8 @@ defmodule KusaDataWeb.Router do
       live "/rankings", RankingsLive
       live "/game/:game", GameLive
       live "/game/:game/player/:id", PlayerLive
+      live "/atlas", AtlasLive
+      live "/atlas/player/:id", AtlasLive
       live "/auth", AuthLive
     end
 

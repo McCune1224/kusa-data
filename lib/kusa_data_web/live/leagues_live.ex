@@ -56,68 +56,99 @@ defmodule KusaDataWeb.LeaguesLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div class="desk-grid animate-fade-up">
-        <div class="mb-5 flex items-center justify-between border-y border-stone-800 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-          <span><span class="mr-2 inline-block size-2 bg-lime-400"></span>Live bracket index</span>
+      <div class="animate-fade-up space-y-6">
+        <div class="flex items-center justify-between border-y border-[var(--border)] py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">
+          <span><span class="mr-2 inline-block size-2 rounded-full bg-[var(--accent)]"></span>Live bracket index</span>
           <span class="hidden sm:inline">Leagues</span>
-          <span class="text-orange-300">07 — Teams</span>
+          <span class="text-[var(--accent)]">07 — Teams</span>
         </div>
 
-        <section>
-          <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
-            Browse
-          </.btn>
-          <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-lime-300">
-            League concept
-          </p>
-          <h1 class="mt-2 text-4xl font-black uppercase tracking-[-0.05em] text-stone-50 sm:text-5xl">
-            Your leagues
-          </h1>
-          <p class="mt-2 text-[15px] text-stone-400">
-            Group linked tournaments into seasons and rank members, Braacket-style.
-          </p>
+        <section class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
+              Browse
+            </.btn>
+            <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+              League concept
+            </p>
+            <h1 class="mt-2 text-4xl font-black uppercase tracking-[-0.05em] text-[var(--text)] sm:text-5xl">
+              Your leagues
+            </h1>
+            <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
+              Group linked tournaments into seasons and rank members, Braacket-style.
+            </p>
+          </div>
+          <div class="hidden rounded-[16px] border border-[var(--border)] bg-[var(--surface)]/60 px-4 py-3 sm:block">
+            <p class="font-mono text-xs uppercase tracking-[0.16em] text-[var(--muted)]">
+              Season standings
+            </p>
+            <p class="mt-1 text-sm font-semibold text-[var(--text)]">Braacket-style</p>
+          </div>
         </section>
 
-        <section class="mt-10 grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
-          <div>
-            <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+        <section class="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+          <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface)]/80 p-6 backdrop-blur">
+            <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
               New league
             </h2>
-            <.form for={@form} id="league-form" phx-submit="create" class="mt-4 space-y-3">
+            <p class="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+              Create a circuit, then import tournaments to auto-link members.
+            </p>
+            <.form for={@form} id="league-form" phx-submit="create" class="mt-5 space-y-3">
               <.input
                 field={@form[:name]}
                 type="text"
                 placeholder="Midwest Melee Circuit"
-                class="h-11 w-full rounded-none border border-stone-700/70 bg-stone-950 px-4 text-sm text-stone-200"
+                class="h-11 w-full rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)] placeholder:text-[var(--muted)]"
               />
-              <.btn variant="primary" type="submit" class="rounded-none w-full">Create league</.btn>
+              <.btn variant="primary" type="submit" class="w-full rounded-full">Create league</.btn>
             </.form>
           </div>
 
-          <div>
-            <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-              Your leagues
-            </h2>
-            <div class="mt-4 space-y-2">
+          <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface2)]/60 p-6 backdrop-blur">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                Your leagues
+              </h2>
+              <span class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 font-mono text-[11px] text-[var(--muted)]">{length(
+                @leagues
+              )} total</span>
+            </div>
+            <div class="mt-4">
               <%= if @loading do %>
-                <.skeleton :for={_ <- 1..3} class="h-16 w-full rounded-none" />
-              <% else %>
-                <div
-                  :for={league <- @leagues}
-                  class="rounded-xl border border-stone-800 bg-stone-900/40 p-5 transition-colors hover:border-stone-600"
-                >
-                  <.link
-                    navigate={~p"/leagues/#{league.id}"}
-                    class="flex items-center justify-between gap-3"
-                  >
-                    <span class="text-lg font-medium text-stone-200 hover:text-stone-50">
-                      {league.name}
-                    </span>
-                    <.icon name="hero-arrow-right" class="size-4 text-stone-600" />
-                  </.link>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <.skeleton :for={_ <- 1..4} class="h-24 w-full rounded-[16px]" />
                 </div>
-                <div :if={@leagues == []} class="text-sm text-stone-600">
-                  No leagues yet — create one to start importing tournaments.
+              <% else %>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div
+                    :for={league <- @leagues}
+                    class="group rounded-[16px] border border-[var(--border)] bg-[var(--surface)]/80 p-4 backdrop-blur transition-colors hover:border-[var(--border2)] hover:bg-[var(--surface)]"
+                  >
+                    <.link navigate={~p"/leagues/#{league.id}"} class="flex h-full flex-col gap-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <span class="flex size-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface2)] text-xs font-bold text-[var(--text)]">{String.slice(
+                          league.name || "?",
+                          0,
+                          1
+                        )
+                        |> String.upcase()}</span>
+                        <span class="flex size-7 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] transition-colors group-hover:border-[var(--accent)]/40 group-hover:text-[var(--accent)]"><.icon
+                          name="hero-arrow-up-right"
+                          class="size-3.5"
+                        /></span>
+                      </div>
+                      <span class="line-clamp-2 text-[15px] font-semibold leading-snug text-[var(--text)] group-hover:text-white">{league.name}</span>
+                      <span class="mt-auto inline-flex items-center gap-1.5 text-xs text-[var(--muted)]"><span class="size-1.5 rounded-full bg-[var(--accent)]"></span>
+                      Open standings</span>
+                    </.link>
+                  </div>
+                  <div
+                    :if={@leagues == []}
+                    class="col-span-full rounded-[16px] border border-dashed border-[var(--border)] px-6 py-10 text-center text-sm text-[var(--muted)]"
+                  >
+                    No leagues yet — create one to start importing tournaments.
+                  </div>
                 </div>
               <% end %>
             </div>

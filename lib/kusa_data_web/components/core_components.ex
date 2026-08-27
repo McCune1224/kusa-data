@@ -120,10 +120,11 @@ defmodule KusaDataWeb.CoreComponents do
     }
 
     variant = %{
-      "primary" => "bg-lime-400 text-stone-950 hover:bg-lime-300",
+      "primary" =>
+        "bg-[#a3e635] text-[#08070b] hover:bg-[#b8f05a] tracking-[-0.02em] font-semibold",
       "secondary" =>
-        "border border-stone-600/80 bg-stone-900/60 text-stone-200 hover:border-stone-400 hover:bg-stone-800/70 hover:text-white",
-      "ghost" => "text-stone-400 hover:bg-stone-800/60 hover:text-stone-100"
+        "border border-[rgba(255,255,255,0.08)] bg-[#121116]/80 text-[#f5f3ff] hover:border-[rgba(255,255,255,0.14)] hover:bg-[#1a1920]/80 hover:text-white",
+      "ghost" => "text-[#9a95b0] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#f5f3ff]"
     }
 
     icon_size = %{"sm" => "size-4", "md" => "size-4", "lg" => "size-4"}
@@ -234,8 +235,9 @@ defmodule KusaDataWeb.CoreComponents do
     <div
       id={@id}
       class={[
-        "rounded-xl border border-stone-800 bg-stone-900/50",
-        @hover && "rule-hover transition-colors hover:border-stone-600 hover:bg-stone-900/70",
+        "rounded-[20px] border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-sm",
+        @hover &&
+          "rule-hover transition-colors hover:border-[var(--border2)] hover:bg-[var(--surface2)]/80",
         @class
       ]}
     >

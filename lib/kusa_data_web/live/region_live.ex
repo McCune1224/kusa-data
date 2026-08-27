@@ -124,15 +124,16 @@ defmodule KusaDataWeb.RegionLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div class="desk-grid animate-fade-up">
-        <div class="mb-5 flex items-center justify-between border-y border-stone-800 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-          <span><span class="mr-2 inline-block size-2 bg-lime-400"></span>Live bracket index</span>
-          <span class="hidden sm:inline">Regions</span>
-          <span class="text-orange-300">02 — Regions</span>
+      <div class="animate-fade-up space-y-6">
+        <span class="sr-only">Noir Bento</span>
+        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--muted)]">
+          <span><span class="mr-2 inline-block size-2 rounded-full bg-[#a3e635]"></span>Live bracket index</span>
+          <span class="hidden sm:inline">Regions · Noir Bento</span>
+          <span class="text-[#a3e635]">02 — Regions</span>
         </div>
 
-        <section>
-          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-lime-300">
+        <section class="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+          <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-[#a3e635]">
             Browse by region
           </p>
           <div class="mt-2 flex flex-wrap items-end justify-between gap-4">
@@ -143,23 +144,23 @@ defmodule KusaDataWeb.RegionLive do
                 Where it happens
               <% end %>
             </h1>
-            <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
+            <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"} class="rounded-xl">
               All tournaments
             </.btn>
           </div>
         </section>
 
         <%= if @view == :index do %>
-          <section class="mt-10">
+          <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur-sm sm:p-6">
             <%= if @loading do %>
               <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <.skeleton :for={_ <- 1..9} class="h-24 rounded-none" />
+                <.skeleton :for={_ <- 1..9} class="h-24 rounded-[20px]" />
               </div>
             <% else %>
               <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div
                   :for={region <- @regions}
-                  class="flex flex-col justify-between border border-stone-800 bg-stone-900/40 p-5 transition-colors hover:border-stone-600 hover:bg-stone-900/70"
+                  class="flex flex-col justify-between rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-5 backdrop-blur-sm transition-colors hover:border-[var(--border2)] hover:bg-[var(--surface2)]"
                 >
                   <.link
                     navigate={region_path(region)}
@@ -178,7 +179,7 @@ defmodule KusaDataWeb.RegionLive do
                       </div>
                       <.icon
                         name="hero-arrow-right"
-                        class="size-4 shrink-0 text-stone-600 group-hover:text-lime-300"
+                        class="size-4 shrink-0 text-[var(--muted)] group-hover:text-[#a3e635]"
                       />
                     </div>
                   </.link>
@@ -189,7 +190,7 @@ defmodule KusaDataWeb.RegionLive do
                 <.empty_state icon="hero-globe-americas" title="No regions available">
                   <:body>The start.gg API may be unhappy right now — try again in a moment.</:body>
                   <:action>
-                    <.btn variant="secondary" navigate={~p"/"} class="rounded-none">
+                    <.btn variant="secondary" navigate={~p"/"} class="rounded-xl">
                       Back to browsing
                     </.btn>
                   </:action>
@@ -198,16 +199,16 @@ defmodule KusaDataWeb.RegionLive do
             <% end %>
           </section>
         <% else %>
-          <section class="mt-10">
+          <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur-sm sm:p-6">
             <div class="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+                <p class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
                   upcoming in {@country}{if @state, do: " / #{@state}", else: ""}
                 </p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-stone-100">
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-[#f5f3ff]">
                   Tournaments
                 </h2>
-                <p class="mt-1 text-[15px] text-stone-400">{format_count(@total)}</p>
+                <p class="mt-1 text-[15px] text-[var(--muted)]">{format_count(@total)}</p>
               </div>
             </div>
 

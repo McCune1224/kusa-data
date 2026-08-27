@@ -13,6 +13,7 @@ defmodule KusaDataWeb.PlayerH2HLive do
        opponent_id: nil,
        data: nil,
        identities: %{},
+       graph: nil,
        error: nil,
        loading: true
      )}
@@ -31,6 +32,7 @@ defmodule KusaDataWeb.PlayerH2HLive do
         opponent_id: opponent_id,
         data: nil,
         identities: %{},
+        graph: nil,
         error: nil,
         loading: true
       )
@@ -43,17 +45,23 @@ defmodule KusaDataWeb.PlayerH2HLive do
   def handle_info({:h2h_loaded, ref, result}, %{assigns: %{load_ref: ref}} = socket) do
     case result do
       {:ok, data, identities} ->
-        {:noreply,
-         assign(socket,
-           data: data,
-           identities: identities,
-           error: nil,
-           loading: false,
-           load_ref: nil
-         )}
+        graph =
+          build_h2h_graph(socket.assigns.player_id, socket.assigns.opponent_id, identities, data)
+
+        socket =
+          assign(socket,
+            data: data,
+            identities: identities,
+            graph: graph,
+            error: nil,
+            loading: false,
+            load_ref: nil
+          )
+
+        {:noreply, push_event(socket, "atlas:data", %{type: "network", graph: graph})}
 
       {:error, reason} ->
-        {:noreply, assign(socket, data: nil, error: reason, loading: false)}
+        {:noreply, assign(socket, data: nil, graph: nil, error: reason, loading: false)}
     end
   end
 
@@ -80,11 +88,52 @@ defmodule KusaDataWeb.PlayerH2HLive do
     assign(socket, load_ref: ref)
   end
 
+  defp build_h2h_graph(player_id, opponent_id, identities, data) do
+    tag_a = identity_tag(identities, :a, player_id)
+    tag_b = identity_tag(identities, :b, opponent_id)
+    sets = (data && data["sets"]) || 0
+    weight = max(sets, 1)
+
+    nodes = [
+      %{
+        "player_id" => to_int(player_id),
+        "gamer_tag" => tag_a,
+        "is_focal" => true,
+        "weight" => ((data && data["player_a_wins"]) || 0) + 1
+      },
+      %{
+        "player_id" => to_int(opponent_id),
+        "gamer_tag" => tag_b,
+        "is_focal" => false,
+        "weight" => ((data && data["player_b_wins"]) || 0) + 1
+      }
+    ]
+
+    edge = %{
+      "source" => to_int(player_id),
+      "target" => to_int(opponent_id),
+      "weight" => weight
+    }
+
+    %{"nodes" => nodes, "edges" => [edge]}
+  end
+
+  defp to_int(id) when is_integer(id), do: id
+
+  defp to_int(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> n
+      _ -> id
+    end
+  end
+
+  defp to_int(id), do: id
+
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div>
+      <div class="space-y-4 animate-fade-up">
         <.btn
           variant="ghost"
           size="sm"
@@ -94,64 +143,135 @@ defmodule KusaDataWeb.PlayerH2HLive do
           Player page
         </.btn>
 
-        <div class="mt-5">
-          <p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
+        <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-6">
+          <p class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
             Head-to-head
           </p>
-          <h1 class="mt-2 text-2xl font-semibold tracking-tight text-stone-50">
-            ){identity_tag(@identities, :a, @player_id)} vs ){identity_tag(
+          <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[var(--text)]">
+            {identity_tag(@identities, :a, @player_id)} vs {identity_tag(
               @identities,
               :b,
               @opponent_id
             )}
           </h1>
+          <p class="mt-1 text-sm text-[var(--muted)]">Bento duel view with central edge graph</p>
         </div>
 
-        <div class="mt-8">
-          <%= if @loading do %>
-            <div class="grid gap-4 sm:grid-cols-3">
-              <.skeleton :for={_ <- 1..3} class="h-32 rounded-xl" />
-            </div>
+        <%= if @loading do %>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <.skeleton :for={_ <- 1..3} class="h-28 rounded-[20px]" />
+          </div>
+          <.skeleton class="h-[320px] rounded-[20px]" />
+        <% else %>
+          <%= if @data == nil do %>
+            <.empty_state icon="hero-exclamation-triangle" title="Couldn't load the matchup">
+              <:body>The start.gg API may be unhappy right now — try again in a moment.</:body>
+            </.empty_state>
           <% else %>
-            <%= if @data == nil do %>
-              <.empty_state icon="hero-exclamation-triangle" title="Couldn't load the matchup">
-                <:body>The start.gg API may be unhappy right now — try again in a moment.</:body>
-              </.empty_state>
-            <% else %>
-              <div id="h2h-record" class="grid gap-4 sm:grid-cols-3">
-                <div class="rounded-xl border border-stone-800 bg-stone-900/50 px-5 py-5">
-                  <div class="text-xs font-medium uppercase tracking-[0.12em] text-stone-400">
-                    ){identity_tag(@identities, :a, @player_id)}
-                  </div>
-                  <div class="mt-2 font-mono text-4xl font-semibold text-emerald-400 tabular-nums">
-                    {@data["player_a_wins"]}
-                  </div>
-                  <div class="mt-1 text-sm text-stone-400">wins</div>
+            <div class="grid gap-3 lg:grid-cols-[1fr_auto_1fr]">
+              <.card class="p-6 text-center">
+                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-[var(--surface2)] ring-1 ring-[var(--border)]">
+                  <.avatar name={identity_tag(@identities, :a, @player_id)} class="size-10" />
                 </div>
-                <div class="rounded-xl border border-stone-800 bg-stone-900/50 px-5 py-5 text-center">
-                  <div class="text-xs font-medium uppercase tracking-[0.12em] text-stone-400">
-                    Sets
-                  </div>
-                  <div class="mt-2 font-mono text-4xl font-semibold text-stone-200 tabular-nums">
-                    {@data["sets"]}
-                  </div>
-                  <div class="mt-1 text-sm text-stone-400">
-                    {@data["unresolved_sets"]} unresolved
-                  </div>
+                <div class="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {identity_tag(@identities, :a, @player_id)}
                 </div>
-                <div class="rounded-xl border border-stone-800 bg-stone-900/50 px-5 py-5 text-right">
-                  <div class="text-xs font-medium uppercase tracking-[0.12em] text-stone-400">
-                    ){identity_tag(@identities, :b, @opponent_id)}
-                  </div>
-                  <div class="mt-2 font-mono text-4xl font-semibold text-rose-400 tabular-nums">
-                    {@data["player_b_wins"]}
-                  </div>
-                  <div class="mt-1 text-sm text-stone-400">wins</div>
+                <div class="mt-2 font-mono text-4xl font-semibold text-emerald-400 tabular-nums">
+                  {@data["player_a_wins"]}
                 </div>
+                <div class="mt-1 text-sm text-[var(--muted)]">wins</div>
+                <.link
+                  navigate={~p"/player/#{@player_id}"}
+                  class="mt-3 inline-flex rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 py-1 text-xs text-[var(--muted)] hover:border-[var(--border2)] hover:text-[var(--text)]"
+                >
+                  View profile
+                </.link>
+              </.card>
+
+              <div class="flex flex-col items-center justify-center gap-2 py-2 lg:px-2">
+                <span class="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-black uppercase tracking-widest text-[#08070b]">VS</span>
+                <span class="font-mono text-xs text-[var(--muted)]">{@data["sets"]} sets</span>
+                <span class="text-xs text-[var(--muted)]">{@data["unresolved_sets"]} unresolved</span>
               </div>
-            <% end %>
+
+              <.card class="p-6 text-center">
+                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-[var(--surface2)] ring-1 ring-[var(--border)]">
+                  <.avatar name={identity_tag(@identities, :b, @opponent_id)} class="size-10" />
+                </div>
+                <div class="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {identity_tag(@identities, :b, @opponent_id)}
+                </div>
+                <div class="mt-2 font-mono text-4xl font-semibold text-rose-400 tabular-nums">
+                  {@data["player_b_wins"]}
+                </div>
+                <div class="mt-1 text-sm text-[var(--muted)]">wins</div>
+                <.link
+                  navigate={~p"/player/#{@opponent_id}"}
+                  class="mt-3 inline-flex rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 py-1 text-xs text-[var(--muted)] hover:border-[var(--border2)] hover:text-[var(--text)]"
+                >
+                  View profile
+                </.link>
+              </.card>
+            </div>
+
+            <div class="grid gap-3 lg:grid-cols-[1.4fr_0.6fr]">
+              <.card class="p-5">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+                    Edge graph
+                  </h2>
+                  <span class="font-mono text-[11px] text-[var(--muted)]">H2H network · {length(
+                    (@graph && @graph["edges"]) || []
+                  )} edge</span>
+                </div>
+                <div
+                  id="player-network"
+                  phx-hook="AtlasHook"
+                  phx-update="ignore"
+                  class="atlas-canvas mt-4 h-[320px] w-full overflow-hidden rounded-[16px] border border-[var(--border)] bg-[var(--surface2)]/40"
+                >
+                </div>
+                <p class="mt-3 text-xs text-[var(--muted)]">
+                  Central edge visualizes the duel. Nodes scale with wins.
+                </p>
+              </.card>
+
+              <.card class="p-5">
+                <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Record
+                </h2>
+                <div id="h2h-record" class="mt-4 space-y-3">
+                  <div class="flex items-center justify-between rounded-[16px] border border-[var(--border)] bg-[var(--surface2)]/40 px-4 py-4">
+                    <span class="text-sm text-[var(--muted)]">Sets played</span>
+                    <span class="font-mono text-lg font-semibold text-[var(--text)]">{@data["sets"]}</span>
+                  </div>
+                  <div class="flex items-center justify-between rounded-[16px] border border-[var(--border)] bg-[var(--surface2)]/40 px-4 py-4">
+                    <span class="text-sm text-[var(--muted)]">Unresolved</span>
+                    <span class="font-mono text-lg font-semibold text-amber-300">{@data[
+                      "unresolved_sets"
+                    ]}</span>
+                  </div>
+                  <div class="rounded-[16px] bg-[var(--accent)]/10 px-4 py-3 ring-1 ring-[var(--accent)]/20">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">
+                      Outcome
+                    </p>
+                    <p class="mt-1 font-mono text-sm text-[var(--text)]">
+                      <%= cond do %>
+                        <% @data["player_a_wins"] > @data["player_b_wins"] -> %>
+                          {identity_tag(@identities, :a, @player_id)} leads
+                        <% @data["player_b_wins"] > @data["player_a_wins"] -> %>
+                          {identity_tag(@identities, :b, @opponent_id)} leads
+                        <% true -> %>
+                          Even
+                      <% end %>
+                      · {@data["player_a_wins"]}-{@data["player_b_wins"]}
+                    </p>
+                  </div>
+                </div>
+              </.card>
+            </div>
           <% end %>
-        </div>
+        <% end %>
       </div>
     </Layouts.app>
     """

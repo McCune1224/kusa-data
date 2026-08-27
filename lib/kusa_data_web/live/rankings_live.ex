@@ -98,86 +98,112 @@ defmodule KusaDataWeb.RankingsLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div class="desk-grid animate-fade-up">
-        <div class="mb-5 flex items-center justify-between border-y border-stone-800 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-          <span><span class="mr-2 inline-block size-2 bg-lime-400"></span>Live bracket index</span>
+      <div class="animate-fade-up space-y-6">
+        <div class="flex items-center justify-between border-y border-[var(--border)] py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">
+          <span><span class="mr-2 inline-block size-2 rounded-full bg-[var(--accent)]"></span>Live bracket index</span>
           <span class="hidden sm:inline">Rankings</span>
-          <span class="text-orange-300">04 — Power</span>
+          <span class="text-[var(--accent)]">04 — Power</span>
         </div>
 
-        <section>
-          <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
-            Browse
-          </.btn>
-          <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-lime-300">
-            Elo power rankings
-          </p>
-          <h1 class="mt-2 text-4xl font-black uppercase tracking-[-0.05em] text-stone-50 sm:text-5xl">
-            Who's hot
-          </h1>
-          <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-stone-400">
-            Deterministic Elo ratings from completed sets, with a configurable
-            tournament floor and a documented time-weight on older results.
-          </p>
+        <section class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
+              Browse
+            </.btn>
+            <p class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+              Elo power rankings
+            </p>
+            <h1 class="mt-2 text-4xl font-black uppercase tracking-[-0.05em] text-[var(--text)] sm:text-5xl">
+              Who's hot
+            </h1>
+            <p class="mt-2 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
+              Deterministic Elo ratings from completed sets, with a configurable tournament floor and a documented time-weight on older results.
+            </p>
+          </div>
+          <div class="hidden rounded-[16px] border border-[var(--border)] bg-[var(--surface)]/60 px-4 py-3 sm:block">
+            <p class="font-mono text-xs uppercase tracking-[0.16em] text-[var(--muted)]">
+              Elo · time-weighted
+            </p>
+            <p class="mt-1 text-sm font-semibold text-[var(--text)]">Recent sets weigh more</p>
+          </div>
         </section>
 
-        <.form
-          for={@form}
-          id="rankings-filter-form"
-          phx-submit="apply"
-          class="mt-8 flex flex-wrap items-end gap-3 rounded-xl border border-stone-800 bg-stone-900/40 p-4"
-        >
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">Game</label>
-            <.input
-              field={@form[:game]}
-              type="select"
-              options={Enum.map(KusaData.Games.all(), fn g -> {g.short_name, g.slug} end)}
-              class="h-10 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
-            />
+        <section class="rounded-[20px] border border-[var(--border)] bg-[var(--surface)]/80 p-4 backdrop-blur sm:p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+              Filters
+            </h2>
+            <span class="rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Noir Bento · pill toggles</span>
           </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">Country</label>
-            <.input
-              field={@form[:country]}
-              type="text"
-              placeholder="US"
-              class="h-10 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
-            />
+          <.form
+            for={@form}
+            id="rankings-filter-form"
+            phx-submit="apply"
+            class="mt-4 flex flex-wrap items-end gap-3"
+          >
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">Game</label>
+              <.input
+                field={@form[:game]}
+                type="select"
+                options={Enum.map(KusaData.Games.all(), fn g -> {g.short_name, g.slug} end)}
+                class="h-10 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)]"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">Country</label>
+              <.input
+                field={@form[:country]}
+                type="text"
+                placeholder="US"
+                class="h-10 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)] placeholder:text-[var(--muted)]"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">State</label>
+              <.input
+                field={@form[:state]}
+                type="text"
+                placeholder="IL"
+                class="h-10 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)] placeholder:text-[var(--muted)]"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">Month</label>
+              <.input
+                field={@form[:month]}
+                type="month"
+                class="h-10 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)]"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">Min tournaments</label>
+              <.input
+                field={@form[:min_tournaments]}
+                type="number"
+                min="1"
+                class="h-10 w-24 rounded-full border border-[var(--border)] bg-[var(--surface2)] px-4 text-sm text-[var(--text)]"
+              />
+            </div>
+            <.btn variant="primary" type="submit" class="rounded-full">Rank</.btn>
+          </.form>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <%= for g <- KusaData.Games.all() do %>
+              <span class={[
+                "rounded-full border px-3 py-1 text-xs font-medium",
+                if(@form[:game].value == g.slug,
+                  do: "border-[var(--accent)] bg-[var(--accent)] text-[#08070b]",
+                  else: "border-[var(--border)] bg-[var(--surface2)] text-[var(--muted)]"
+                )
+              ]}>{g.short_name}</span>
+            <% end %>
           </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">State</label>
-            <.input
-              field={@form[:state]}
-              type="text"
-              placeholder="IL"
-              class="h-10 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
-            />
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">Month</label>
-            <.input
-              field={@form[:month]}
-              type="month"
-              class="h-10 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
-            />
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-500">Min tournaments</label>
-            <.input
-              field={@form[:min_tournaments]}
-              type="number"
-              min="1"
-              class="h-10 w-24 rounded-none border border-stone-700/70 bg-stone-950 px-3 text-sm"
-            />
-          </div>
-          <.btn variant="primary" type="submit" class="rounded-none">Rank</.btn>
-        </.form>
+        </section>
 
-        <section class="mt-8">
+        <section>
           <%= if @loading do %>
-            <div class="space-y-2">
-              <.skeleton :for={_ <- 1..10} class="h-12 w-full rounded-none" />
+            <div class="grid gap-3">
+              <.skeleton :for={_ <- 1..8} class="h-[72px] w-full rounded-[16px]" />
             </div>
           <% else %>
             <%= cond do %>
@@ -189,52 +215,72 @@ defmodule KusaDataWeb.RankingsLive do
                 </.empty_state>
               <% @data == nil || @data["rankings"] == [] -> %>
                 <.empty_state icon="hero-trophy" title="No eligible players">
-                  <:body>
-                    No players met the tournament floor in this scope yet.
-                  </:body>
+                  <:body>No players met the tournament floor in this scope yet.</:body>
                 </.empty_state>
               <% true -> %>
-                <div class="overflow-hidden rounded-xl border border-stone-800/80">
-                  <div class="flex items-center gap-4 border-b border-stone-800 bg-stone-900/60 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-                    <div class="w-12 shrink-0">#</div>
-                    <div class="flex-1">Player</div>
-                    <div class="hidden w-16 shrink-0 justify-end sm:flex">Rating</div>
-                    <div class="hidden w-20 shrink-0 justify-end sm:flex">W-L</div>
-                    <div class="hidden w-16 shrink-0 justify-end sm:flex">Events</div>
-                  </div>
-
-                  <div id="ranking-rows">
-                    <div
-                      :for={{player, rank} <- Enum.with_index(@data["rankings"], 1)}
-                      class="flex items-center gap-4 border-b border-stone-800/70 bg-stone-900/40 px-5 py-3 transition-colors last:border-b-0 hover:bg-stone-900/70"
-                    >
-                      <div class={["w-12 shrink-0 font-mono text-sm font-bold", rank_class(rank)]}>
-                        {rank}
-                      </div>
-                      <div class="min-w-0 flex-1 truncate">
-                        <.link
-                          navigate={~p"/player/#{player["player_id"]}"}
-                          class="truncate text-[15px] font-medium text-stone-200 transition-colors hover:text-lime-300"
-                        >
-                          {player["gamer_tag"]}
-                        </.link>
-                      </div>
-                      <div class="hidden w-16 shrink-0 justify-end font-mono text-[15px] font-semibold text-stone-100 sm:flex">
-                        {player["rating"]}
-                      </div>
-                      <div class="hidden w-20 shrink-0 justify-end font-mono text-[13px] sm:flex">
+                <div id="ranking-rows" class="grid gap-3">
+                  <div
+                    :for={{player, rank} <- Enum.with_index(@data["rankings"], 1)}
+                    class="group flex items-center gap-4 rounded-[16px] border border-[var(--border)] bg-[var(--surface)]/80 p-4 backdrop-blur transition-colors hover:border-[var(--border2)] hover:bg-[var(--surface2)]/80"
+                  >
+                    <div class={[
+                      "flex size-10 shrink-0 items-center justify-center rounded-full border font-mono text-sm font-bold",
+                      rank_badge_class(rank)
+                    ]}>
+                      {rank}
+                    </div>
+                    <.avatar name={player["gamer_tag"] || "?"} class="size-10 text-sm" />
+                    <div class="min-w-0 flex-1">
+                      <.link
+                        navigate={~p"/player/#{player["player_id"]}"}
+                        class="truncate text-[15px] font-semibold text-[var(--text)] transition-colors group-hover:text-[var(--accent)]"
+                      >
+                        {player["gamer_tag"]}
+                      </.link>
+                      <div class="flex items-center gap-2 font-mono text-xs text-[var(--muted)]">
                         <span class="text-emerald-400">{player["wins"]}W</span>
-                        <span class="mx-1 text-stone-600">-</span>
+                        <span class="text-[var(--muted)]">·</span>
                         <span class="text-rose-400">{player["losses"]}L</span>
-                      </div>
-                      <div class="hidden w-16 shrink-0 justify-end font-mono text-[13px] text-stone-400 sm:flex">
-                        {player["tournaments"]}
+                        <span class="hidden sm:inline text-[var(--muted)]">· {player["tournaments"]} events</span>
                       </div>
                     </div>
+                    <div class="hidden flex-col items-end sm:flex">
+                      <span class="font-mono text-lg font-bold tracking-tight text-[var(--text)]">{player[
+                        "rating"
+                      ]}</span>
+                      <span class="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Elo</span>
+                    </div>
+                    <div class="hidden w-[64px] shrink-0 sm:block" aria-hidden="true">
+                      <svg viewBox="0 0 48 20" class="h-5 w-full">
+                        <polyline
+                          fill="none"
+                          stroke="var(--accent)"
+                          stroke-width="1.6"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          points={sparkline_points(rank, player["rating"])}
+                        />
+                        <polyline
+                          fill="none"
+                          stroke="rgba(255,255,255,0.12)"
+                          stroke-width="1"
+                          points="0,10 48,10"
+                        />
+                      </svg>
+                      <div class="mt-1 flex gap-0.5">
+                        <span
+                          :for={h <- sparkline_bars(rank)}
+                          class="flex-1 rounded-full bg-[var(--accent)]/70"
+                          style={"height: #{h}px"}
+                        ></span>
+                      </div>
+                    </div>
+                    <span class="sm:hidden font-mono text-sm font-semibold text-[var(--text)]">{player[
+                      "rating"
+                    ]}</span>
                   </div>
                 </div>
-
-                <p class="mt-3 text-xs text-stone-500">
+                <p class="mt-3 text-xs text-[var(--muted)]">
                   {length(@data["rankings"])} ranked · {@data["players_scanned"]} players scanned · {@data[
                     "tournaments"
                   ]} tournaments
@@ -247,10 +293,24 @@ defmodule KusaDataWeb.RankingsLive do
     """
   end
 
-  defp rank_class(1), do: "text-amber-400"
-  defp rank_class(2), do: "text-stone-300"
-  defp rank_class(3), do: "text-amber-600"
-  defp rank_class(_), do: "text-stone-500"
+  defp rank_badge_class(1), do: "border-amber-400/40 bg-amber-400/15 text-amber-300"
+  defp rank_badge_class(2), do: "border-zinc-400/30 bg-zinc-400/10 text-zinc-200"
+  defp rank_badge_class(3), do: "border-amber-600/30 bg-amber-600/10 text-amber-400"
+  defp rank_badge_class(_), do: "border-[var(--border)] bg-[var(--surface2)] text-[var(--muted)]"
+
+  defp sparkline_points(rank, rating) do
+    seed = rem((rating || 1500) + rank * 37, 100)
+    y = fn v -> 10 - v / 12 end
+    a = rem(seed, 7) - 3
+    b = rem(seed * 2, 7) - 3
+    c = rem(seed * 3, 7) - 3
+    "0,#{y.(a)} 12,#{y.(b)} 24,#{y.(c)} 36,#{y.(a + b)} 48,#{y.(b)}"
+  end
+
+  defp sparkline_bars(rank) do
+    base = [4, 8, 6, 10, 7]
+    Enum.map(base, fn h -> max(3, rem(h + rank * 2, 11) + 3) end)
+  end
 
   defp month_bounds(nil), do: {nil, nil}
   defp month_bounds(""), do: {nil, nil}

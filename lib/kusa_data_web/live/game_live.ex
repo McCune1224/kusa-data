@@ -102,64 +102,6 @@ defmodule KusaDataWeb.GameLive do
     if page * 24 < total, do: page + 1, else: nil
   end
 
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div class="desk-grid animate-fade-up">
-        <div class="mb-5 flex items-center justify-between border-y border-stone-800 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-          <span><span class="mr-2 inline-block size-2 bg-lime-400"></span>Live bracket index</span>
-          <span class="hidden sm:inline">Games</span>
-          <span class="text-orange-300">03 — Games</span>
-        </div>
-
-        <%= if @not_found do %>
-          <section class="mt-10">
-            <.empty_state icon="hero-question-mark-circle" title="No such game">
-              <:body>
-                That game slug is not in the registry. It may not be a supported start.gg
-                videogame yet.
-              </:body>
-              <:action>
-                <.btn variant="primary" navigate={~p"/"}>Back to browsing</.btn>
-              </:action>
-            </.empty_state>
-          </section>
-        <% else %>
-          <section>
-            <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"}>
-              All tournaments
-            </.btn>
-            <p class="mt-4 text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-              Game page
-            </p>
-            <h1 class="mt-2 text-4xl font-black uppercase tracking-[-0.05em] text-stone-50 sm:text-5xl">
-              {@game[:name]}
-            </h1>
-            <p class="mt-2 text-[15px] text-stone-400">
-              Upcoming {@game[:short_name]} tournaments · {format_count(@total)}
-            </p>
-          </section>
-
-          <section class="mt-10">
-            <TournamentGrid.tournament_grid
-              tournaments={@streams.tournaments}
-              total={@total}
-              loading={@loading}
-              error={@error}
-              empty_title="No upcoming tournaments"
-              empty_body=" for this game yet"
-              reset_link={~p"/"}
-              reset_label="All tournaments"
-              next_page={@next_page}
-            />
-          </section>
-        <% end %>
-      </div>
-    </Layouts.app>
-    """
-  end
-
   defp format_count(0), do: "No events"
   defp format_count(1), do: "1 event"
   defp format_count(total), do: "#{total} events"
