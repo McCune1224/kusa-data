@@ -1,252 +1,154 @@
 defmodule KusaDataWeb.RegionLive do
+  @moduledoc """
+  Browse tournaments by region: an index of available regions plus a
+  per-region grid of tournaments.
+  """
   use KusaDataWeb, :live_view
-
-  alias KusaData.Tournaments
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
-     socket
-     |> assign(
-       nav: :tournaments,
+     assign(socket,
        view: :index,
+       regions: [],
        country: nil,
        state: nil,
-       regions: [],
-       total: 0,
-       next_page: nil,
-       error: nil,
-       loading: true,
-       page: 1
-     )
-     |> stream_configure(:tournaments, dom_id: fn t -> "tournament-#{t["id"]}" end)
-     |> stream(:tournaments, [])}
+       tournaments: []
+     )}
   end
 
   @impl true
-  def handle_params(%{"country" => country, "state" => state}, _uri, socket) do
-    socket =
-      socket
-      |> assign(
-        view: :listing,
-        country: country,
-        state: state,
-        loading: true,
-        page: 1,
-        next_page: nil
-      )
-      |> spawn_listing(country, state, 1, true)
+  def handle_params(params, _url, socket) do
+    if Map.has_key?(params, "country") do
+      country = params["country"]
+      state = Map.get(params, "state", nil)
 
-    {:noreply, socket}
-  end
+      tournaments =
+        safe_browse(%{mode: :region, country: country, state: state})["tournaments"] || []
 
-  def handle_params(_params, _uri, socket) do
-    socket = socket |> assign(view: :index, loading: true) |> spawn_index()
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_info({:regions_loaded, ref, result}, %{assigns: %{regions_ref: ref}} = socket) do
-    case result do
-      {:ok, regions, _status} ->
-        {:noreply, assign(socket, regions: regions, error: nil, loading: false, regions_ref: nil)}
-
-      {:error, reason} ->
-        {:noreply, assign(socket, regions: [], error: reason, loading: false, regions_ref: nil)}
-    end
-  end
-
-  def handle_info({:regions_loaded, _ref, _result}, socket), do: {:noreply, socket}
-
-  @impl true
-  def handle_info({:load_result, ref, result}, %{assigns: %{load_ref: ref}} = socket) do
-    page = socket.assigns.page
-    reset = socket.assigns.reset
-
-    socket =
-      case result do
-        {:ok, data, _status} ->
-          socket
-          |> assign(error: nil, loading: false)
-          |> assign(total: data["total"], next_page: next_page(page, data["total"]))
-          |> stream(:tournaments, data["tournaments"], reset: reset)
-
-        {:error, reason} ->
-          socket
-          |> assign(total: 0, next_page: nil, error: reason, loading: false)
-          |> stream(:tournaments, [], reset: true)
-      end
-
-    {:noreply, assign(socket, load_ref: nil)}
-  end
-
-  def handle_info({:load_result, _ref, _result}, socket), do: {:noreply, socket}
-
-  @impl true
-  def handle_event("load-more", _params, socket) do
-    page = socket.assigns.next_page
-
-    if page && socket.assigns.country do
-      {:noreply, spawn_listing(socket, socket.assigns.country, socket.assigns.state, page, false)}
+      {:noreply,
+       assign(socket, view: :region, country: country, state: state, tournaments: tournaments)}
     else
-      {:noreply, socket}
+      {:noreply, assign(socket, view: :index, regions: safe_regions())}
     end
   end
 
-  defp spawn_index(socket) do
-    ref = make_ref()
-    parent = self()
-
-    Task.start(fn ->
-      send(parent, {:regions_loaded, ref, Tournaments.regions()})
-    end)
-
-    assign(socket, regions_ref: ref)
+  defp safe_regions do
+    case KusaData.Tournaments.regions() do
+      {:ok, regions, _cache} -> regions
+      {:error, _reason} -> []
+    end
   end
 
-  defp spawn_listing(socket, country, state, page, reset) do
-    ref = make_ref()
-    parent = self()
-    query = %{mode: :region, country: country, state: state, page: page}
-
-    Task.start(fn ->
-      send(parent, {:load_result, ref, Tournaments.browse(query)})
-    end)
-
-    assign(socket, load_ref: ref, page: page, reset: reset)
-  end
-
-  defp next_page(page, total) do
-    if page * 24 < total, do: page + 1, else: nil
+  defp safe_browse(query) do
+    case KusaData.Tournaments.browse(query) do
+      {:ok, page, _cache} -> page
+      {:error, _reason} -> %{"tournaments" => []}
+    end
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div class="animate-fade-up space-y-6">
-        <span class="sr-only">Noir Bento</span>
-        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--muted)]">
-          <span><span class="mr-2 inline-block size-2 rounded-full bg-[#ffcc00]"></span>Live bracket index</span>
-          <span class="hidden sm:inline">Regions · Noir Bento</span>
-          <span class="text-[#ffcc00]">02 — Regions</span>
-        </div>
-
-        <section class="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
-          <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-[#ffcc00]">
-            Browse by region
-          </p>
-          <div class="mt-2 flex flex-wrap items-end justify-between gap-4">
-            <h1 class="text-4xl font-black uppercase tracking-[-0.05em] text-stone-50 sm:text-5xl">
-              <%= if @view == :listing do %>
-                {@country}{if @state, do: " / #{@state}"}
-              <% else %>
-                Where it happens
+    <Layouts.app flash={@flash} current_user={@current_user} nav={:tournaments}>
+      <%= if @view == :region do %>
+        <section id={"region-#{@country}-#{@state}"} class="mx-auto max-w-7xl">
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <h1 class="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+                {@country}
+              </h1>
+              <%= if @state do %>
+                <p class="mt-1 text-sm text-muted">{@state}</p>
               <% end %>
-            </h1>
-            <.btn variant="ghost" size="sm" icon="hero-arrow-left" navigate={~p"/"} class="rounded-xl">
-              All tournaments
-            </.btn>
-          </div>
-        </section>
-
-        <%= if @view == :index do %>
-          <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur-sm sm:p-6">
-            <%= if @loading do %>
-              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <.skeleton :for={_ <- 1..9} class="h-24 rounded-[20px]" />
-              </div>
-            <% else %>
-              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div
-                  :for={region <- @regions}
-                  class="flex flex-col justify-between rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-5 backdrop-blur-sm transition-colors hover:border-[var(--border2)] hover:bg-[var(--surface2)]"
-                >
-                  <.link
-                    navigate={region_path(region)}
-                    class="group"
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <h3 class="truncate text-lg font-medium text-stone-200 group-hover:text-stone-50">
-                          {region_label(region)}
-                        </h3>
-                        <p class="mt-1 text-sm text-stone-400">
-                          {region["tournaments"]} tournament{plural(region["tournaments"])} · {region[
-                            "attendees"
-                          ]} attendees
-                        </p>
-                      </div>
-                      <.icon
-                        name="hero-arrow-right"
-                        class="size-4 shrink-0 text-[var(--muted)] group-hover:text-[#ffcc00]"
-                      />
-                    </div>
-                  </.link>
-                </div>
-              </div>
-
-              <div :if={@regions == []} class="mt-8">
-                <.empty_state icon="hero-globe-americas" title="No regions available">
-                  <:body>The start.gg API may be unhappy right now — try again in a moment.</:body>
-                  <:action>
-                    <.btn variant="secondary" navigate={~p"/"} class="rounded-xl">
-                      Back to browsing
-                    </.btn>
-                  </:action>
-                </.empty_state>
-              </div>
-            <% end %>
-          </section>
-        <% else %>
-          <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 p-5 backdrop-blur-sm sm:p-6">
-            <div class="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
-                  upcoming in {@country}{if @state, do: " / #{@state}", else: ""}
-                </p>
-                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-[#f5f3ff]">
-                  Tournaments
-                </h2>
-                <p class="mt-1 text-[15px] text-[var(--muted)]">{format_count(@total)}</p>
-              </div>
             </div>
+            <.link
+              navigate={~p"/regions"}
+              class="text-sm font-medium text-accent transition-colors hover:underline"
+            >
+              All regions
+            </.link>
+          </div>
 
-            <TournamentGrid.tournament_grid
-              tournaments={@streams.tournaments}
-              total={@total}
-              loading={@loading}
-              error={@error}
-              empty_title="No upcoming tournaments here"
-              empty_body=" — check back closer to the season"
-              reset_link={~p"/regions"}
-              reset_label="All regions"
-              next_page={@next_page}
+          <%= if Enum.empty?(@tournaments) do %>
+            <.empty
+              class="mt-8"
+              icon="hero-map"
+              title="No tournaments in this region"
+              description="Check back later — the scene moves fast."
             />
-          </section>
-        <% end %>
-      </div>
+          <% else %>
+            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <%= for tournament <- @tournaments do %>
+                <.tournament_card tournament={tournament} />
+              <% end %>
+            </div>
+          <% end %>
+        </section>
+      <% else %>
+        <section id="regions-live" class="mx-auto max-w-7xl">
+          <div class="flex items-end justify-between gap-4">
+            <div>
+              <h1 class="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+                Tournaments by region
+              </h1>
+              <p class="mt-1 text-sm text-muted">
+                Browse the scene by country and state, best-attended first.
+              </p>
+            </div>
+            <%= if not Enum.empty?(@regions) do %>
+              <span class="hidden text-sm text-faint sm:inline">
+                {length(@regions)} regions
+              </span>
+            <% end %>
+          </div>
+
+          <%= if Enum.empty?(@regions) do %>
+            <.empty
+              class="mt-8"
+              icon="hero-map"
+              title="No regions available yet"
+              description="Region data is derived from recent tournaments."
+            />
+          <% else %>
+            <.table class="mt-6">
+              <thead>
+                <tr class="text-left text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+                  <th class="px-4 py-3 font-semibold">Country</th>
+                  <th class="px-4 py-3 font-semibold">State</th>
+                  <th class="px-4 py-3 text-right font-semibold">Tournaments</th>
+                  <th class="px-4 py-3 text-right font-semibold">Attendees</th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for region <- @regions do %>
+                  <tr class="border-t border-line transition-colors hover:bg-surface-2">
+                    <td class="px-4 py-3">
+                      <%= if region["state"] do %>
+                        <.link
+                          navigate={~p"/region/#{region["country"]}/#{region["state"]}"}
+                          class="font-medium text-ink transition-colors hover:text-accent"
+                        >
+                          {region["country"]}
+                          <span class="text-muted"> · {region["state"]}</span>
+                        </.link>
+                      <% else %>
+                        <span class="font-medium text-ink">
+                          {region["country"]}
+                        </span>
+                      <% end %>
+                    </td>
+                    <td class="px-4 py-3 text-muted">{region["state"] || "—"}</td>
+                    <td class="px-4 py-3 text-right text-ink">{region["tournaments"]}</td>
+                    <td class="px-4 py-3 text-right text-muted">{region["attendees"]}</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </.table>
+          <% end %>
+        </section>
+      <% end %>
     </Layouts.app>
     """
   end
-
-  defp region_label(%{"state" => state, "country" => country}) when is_binary(state),
-    do: "#{country}, #{state}"
-
-  defp region_label(%{"country" => country}), do: country
-
-  defp region_path(%{"state" => state, "country" => country}) when is_binary(state) do
-    "/region/#{URI.encode_www_form(country)}/#{URI.encode_www_form(state)}"
-  end
-
-  defp region_path(%{"country" => country}) do
-    "/region/#{URI.encode_www_form(country)}"
-  end
-
-  defp format_count(0), do: "No events"
-  defp format_count(1), do: "1 event"
-  defp format_count(total), do: "#{total} events"
-
-  defp plural(1), do: ""
-  defp plural(_), do: "s"
 end

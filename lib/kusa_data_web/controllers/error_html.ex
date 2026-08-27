@@ -1,24 +1,75 @@
 defmodule KusaDataWeb.ErrorHTML do
-  @moduledoc """
-  This module is invoked by your endpoint in case of errors on HTML requests.
-
-  See config/config.exs.
-  """
   use KusaDataWeb, :html
 
-  # If you want to customize your error pages,
-  # uncomment the embed_templates/1 call below
-  # and add pages to the error directory:
-  #
-  #   * lib/kusa_data_web/controllers/error_html/404.html.heex
-  #   * lib/kusa_data_web/controllers/error_html/500.html.heex
-  #
-  # embed_templates "error_html/*"
+  @doc """
+  Standalone HTML error pages (no Layouts.app — that expects LiveView assigns
+  such as @current_user / @flash). Phoenix calls render/2 with a template name
+  like "404" or "500" when the request accepts HTML.
+  """
 
-  # The default is to render a plain text page based on
-  # the template name. For example, "404.html" becomes
-  # "Not Found".
-  def render(template, _assigns) do
-    Phoenix.Controller.status_message_from_template(template)
+  def render("404", assigns) do
+    ~H"""
+    <div
+      id="error-404"
+      class="flex min-h-screen flex-col items-center justify-center bg-canvas px-6 text-ink"
+    >
+      <div class="flex flex-col items-center gap-6 text-center">
+        <h1 class="font-display text-8xl font-bold tracking-tight text-ink">404</h1>
+        <p class="max-w-md text-lg text-muted">
+          The page you're looking for doesn't exist or may have moved.
+        </p>
+        <.link
+          navigate={~p"/"}
+          class="rounded-card bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+        >
+          Home
+        </.link>
+      </div>
+    </div>
+    """
+  end
+
+  def render("500", assigns) do
+    ~H"""
+    <div
+      id="error-500"
+      class="flex min-h-screen flex-col items-center justify-center bg-canvas px-6 text-ink"
+    >
+      <div class="flex flex-col items-center gap-6 text-center">
+        <h1 class="font-display text-8xl font-bold tracking-tight text-ink">500</h1>
+        <p class="max-w-md text-lg text-muted">
+          Something went wrong on our end. Please try again in a moment.
+        </p>
+        <.link
+          navigate={~p"/"}
+          class="rounded-card bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+        >
+          Home
+        </.link>
+      </div>
+    </div>
+    """
+  end
+
+  def render(_, assigns) do
+    ~H"""
+    <div
+      id="error-page"
+      class="flex min-h-screen flex-col items-center justify-center bg-canvas px-6 text-ink"
+    >
+      <div class="flex flex-col items-center gap-6 text-center">
+        <h1 class="font-display text-8xl font-bold tracking-tight text-ink">Oops</h1>
+        <p class="max-w-md text-lg text-muted">
+          We couldn't find what you were looking for.
+        </p>
+        <.link
+          navigate={~p"/"}
+          class="rounded-card bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-strong"
+        >
+          Home
+        </.link>
+      </div>
+    </div>
+    """
   end
 end

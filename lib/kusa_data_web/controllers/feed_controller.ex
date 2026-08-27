@@ -1,107 +1,98 @@
 defmodule KusaDataWeb.FeedController do
+  @moduledoc """
+  JSON and RSS 2.0 feeds for tournament browsing.
+
+  `GET /feed/upcoming.json` and `GET /feed/recent.json` return the raw
+  tournament list, while `GET /feed/upcoming.rss` and `GET /feed/recent.rss`
+  render the same data as an RSS 2.0 channel for feed readers.
+  """
+
   use KusaDataWeb, :controller
 
   alias KusaData.Tournaments
+  alias KusaDataWeb.Format
 
-  def upcoming_json(conn, _params), do: render_json_feed(conn, :upcoming)
-  def recent_json(conn, _params), do: render_json_feed(conn, :recent)
-  def upcoming_rss(conn, _params), do: render_rss(conn, :upcoming)
-  def recent_rss(conn, _params), do: render_rss(conn, :recent)
-
-  defp render_json_feed(conn, mode) do
-    feed = feed(mode)
-    body = Jason.encode!(feed)
-    conditional_send(conn, body, "application/json", etag(body))
+  def upcoming_json(conn, _params) do
+    tournaments = safe_tournaments(Tournaments.browse(%{mode: :upcoming}))
+    json(conn, %{tournaments: tournaments})
   end
 
-  defp render_rss(conn, mode) do
-    items = feed_items(mode)
-
-    body =
-      [
-        ~s(<?xml version="1.0" encoding="UTF-8"?>),
-        ~s(<rss version="2.0"><channel><title>KusaData #{mode}</title><link>https://kusa-data.example</link><description>start.gg tournament feed</description>),
-        Enum.map_join(items, &rss_item/1),
-        "</channel></rss>"
-      ]
-      |> IO.iodata_to_binary()
-
-    conditional_send(conn, body, "application/rss+xml", etag(body))
+  def recent_json(conn, _params) do
+    tournaments = safe_tournaments(Tournaments.browse(%{mode: :past, results_only: true}))
+    json(conn, %{tournaments: tournaments})
   end
 
-  defp feed(mode) do
-    %{
-      "id" => "kusa-data:#{mode}",
-      "mode" => Atom.to_string(mode),
-      "generated_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "items" => feed_items(mode)
-    }
+  def upcoming_rss(conn, _params) do
+    tournaments = safe_tournaments(Tournaments.browse(%{mode: :upcoming}))
+    xml = render_rss("KusaData — Upcoming Melee Tournaments", tournaments)
+
+    conn
+    |> put_resp_content_type("application/rss+xml")
+    |> send_resp(:ok, xml)
   end
 
-  defp feed_items(:upcoming) do
-    case Tournaments.browse(%{mode: :upcoming, page: 1, games: :all}) do
-      {:ok, result, _} -> Enum.map(result["tournaments"] || [], &normalize_item/1)
-      _ -> []
+  def recent_rss(conn, _params) do
+    tournaments = safe_tournaments(Tournaments.browse(%{mode: :past, results_only: true}))
+    xml = render_rss("KusaData — Recent Melee Results", tournaments)
+
+    conn
+    |> put_resp_content_type("application/rss+xml")
+    |> send_resp(:ok, xml)
+  end
+
+  defp safe_tournaments({:ok, %{"tournaments" => tournaments}, _}), do: tournaments
+  defp safe_tournaments(_), do: []
+
+  defp render_rss(title, tournaments) do
+    items =
+      tournaments
+      |> Enum.map(&rss_item/1)
+      |> Enum.join("\n")
+
+    link = to_string(~p"/")
+
+    ~s|<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>#{xml_escape(title)}</title>
+    <link>#{xml_escape(link)}</link>
+    <description>#{xml_escape(title)}</description>
+#{items}
+  </channel>
+</rss>
+|
+  end
+
+  defp rss_item(tournament) do
+    slug = Format.bare_slug(tournament["slug"])
+    title = xml_escape(tournament["name"] || "")
+    link = xml_escape(to_string(~p"/tournament/#{slug}"))
+    pub_date = rss_date(tournament["startAt"])
+
+    ~s|    <item>
+      <title>#{title}</title>
+      <link>#{link}</link>
+      <pubDate>#{pub_date}</pubDate>
+    </item>|
+  end
+
+  defp rss_date(nil), do: ""
+
+  defp rss_date(unix) when is_integer(unix) do
+    case DateTime.from_unix(unix) do
+      {:ok, datetime} -> Calendar.strftime(datetime, "%a, %d %b %Y %H:%M:%S GMT")
+      _ -> ""
     end
   end
 
-  defp feed_items(:recent) do
-    case Tournaments.browse(%{mode: :past, page: 1, games: :all, results_only: true}) do
-      {:ok, result, _} -> Enum.map(result["tournaments"] || [], &normalize_item/1)
-      _ -> []
-    end
+  defp xml_escape(nil), do: ""
+
+  defp xml_escape(value) when is_binary(value) do
+    value
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("'", "&apos;")
   end
-
-  defp normalize_item(tournament) do
-    %{
-      "id" => to_string(tournament["id"] || tournament["slug"]),
-      "slug" => tournament["slug"],
-      "name" => tournament["name"],
-      "url" => "https://kusa-data.example/tournament/#{tournament["slug"]}",
-      "start_at" => iso_timestamp(tournament["startAt"]),
-      "end_at" => iso_timestamp(tournament["endAt"]),
-      "city" => tournament["city"],
-      "country_code" => tournament["countryCode"]
-    }
-  end
-
-  defp rss_item(item) do
-    [
-      "<item><guid isPermaLink=\"false\">",
-      xml(item["id"]),
-      "</guid><title>",
-      xml(item["name"]),
-      "</title><link>",
-      xml(item["url"]),
-      "</link><pubDate>",
-      xml(item["start_at"] || item["end_at"] || ""),
-      "</pubDate><description>",
-      xml(Enum.reject([item["city"], item["country_code"]], &is_nil/1) |> Enum.join(", ")),
-      "</description></item>"
-    ]
-  end
-
-  defp conditional_send(conn, body, content_type, etag) do
-    if get_req_header(conn, "if-none-match") == [etag] do
-      conn
-      |> put_resp_header("etag", etag)
-      |> send_resp(304, "")
-    else
-      conn
-      |> put_resp_content_type(content_type)
-      |> put_resp_header("etag", etag)
-      |> send_resp(200, body)
-    end
-  end
-
-  defp etag(body), do: "\"#{:crypto.hash(:sha256, body) |> Base.encode16(case: :lower)}\""
-  defp iso_timestamp(nil), do: nil
-
-  defp iso_timestamp(value) when is_integer(value),
-    do: DateTime.from_unix!(value) |> DateTime.to_iso8601()
-
-  defp iso_timestamp(value) when is_binary(value), do: value
-  defp iso_timestamp(_), do: nil
-  defp xml(nil), do: ""
-  defp xml(value), do: value |> to_string() |> Plug.HTML.html_escape()
 end

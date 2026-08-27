@@ -1,62 +1,77 @@
 defmodule KusaDataWeb.UserSessionController do
   @moduledoc """
-  Session lifecycle: `POST /log-in` authenticates and stores the session
-  token; `DELETE /log-out` clears it.
+  Handles user login/logout via standard HTML form posts.
   """
 
   use KusaDataWeb, :controller
 
   alias KusaData.Accounts
 
-  @session_key :user_token
+  @doc """
+  Authenticates a user from `params["user"]` (email, password).
 
-  def create(conn, %{"email" => email, "password" => password} = params) do
+  On success, opens a session and redirects home with a welcome flash.
+  On failure, redirects back to the login form with an error flash.
+  """
+  def create(conn, %{"user" => %{"email" => email, "password" => password}}) do
+    do_create(conn, email, password)
+  end
+
+  def create(conn, %{"email" => email, "password" => password}) do
+    do_create(conn, email, password)
+  end
+
+  def create(conn, _params) do
+    conn
+    |> put_flash(:error, "Invalid email or password")
+    |> redirect(to: ~p"/auth?mode=login")
+  end
+
+  @doc """
+  Logs the current user out by clearing the session.
+  """
+  def delete(conn, _params) do
     if Accounts.repo_configured?() do
-      case Accounts.authenticate_by_email_password(email, password) do
-        {:ok, user} ->
-          case Accounts.create_session(user) do
-            {:ok, _session, token} ->
-              conn
-              |> put_session(@session_key, token)
-              |> put_flash(:info, "Welcome back!")
-              |> redirect(to: params["return_to"] || "/")
-
-            {:error, _changeset} ->
-              redirect_login_error(conn, "Could not start a session. Please try again.")
-          end
-
-        {:error, :invalid_credentials} ->
-          redirect_login_error(conn, "Invalid email or password.")
+      case get_session(conn, :user_token) do
+        nil -> :ok
+        token -> Accounts.delete_session(token)
       end
-    else
-      redirect_login_error(
-        conn,
-        "Accounts need a PostgreSQL database — set DATABASE_URL and restart."
-      )
+    end
+
+    conn
+    |> configure_session(drop: true)
+    |> redirect(to: ~p"/")
+  end
+
+  defp do_create(conn, email, password) do
+    case Accounts.authenticate_by_email_password(email, password) do
+      {:ok, user} ->
+        conn = maybe_open_session(conn, user)
+
+        conn
+        |> put_flash(:info, "Welcome back!")
+        |> redirect(to: ~p"/")
+
+      {:error, :invalid_credentials} ->
+        conn
+        |> put_flash(:error, "Invalid email or password")
+        |> redirect(to: ~p"/auth?mode=login")
     end
   end
 
-  def delete(conn, _params) do
-    conn
-    |> logout()
-    |> put_flash(:info, "You have been logged out.")
-    |> redirect(to: "/")
-  end
+  defp maybe_open_session(conn, user) do
+    if Accounts.repo_configured?() do
+      case Accounts.create_session(user) do
+        {:ok, _session, token} ->
+          conn
+          |> put_session(:user_token, token)
+          |> configure_session(renew: true)
 
-  defp redirect_login_error(conn, message) do
-    conn
-    |> put_flash(:error, message)
-    |> redirect(to: "/auth?mode=login")
-  end
-
-  defp logout(conn) do
-    case get_session(conn, @session_key) do
-      nil ->
-        conn
-
-      token ->
-        Accounts.delete_session(token)
-        delete_session(conn, @session_key)
+        {:error, _changeset} ->
+          conn
+      end
+    else
+      conn
     end
   end
 end

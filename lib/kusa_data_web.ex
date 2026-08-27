@@ -85,14 +85,18 @@ defmodule KusaDataWeb do
 
       # HTML escaping functionality
       import Phoenix.HTML
+
+      import Phoenix.Controller,
+        only: [get_csrf_token: 0, view_module: 1, view_template: 1]
+
       # Core UI components
       import KusaDataWeb.CoreComponents
-      alias KusaDataWeb.TournamentGrid
+      import KusaDataWeb.Components
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS
       alias KusaDataWeb.Layouts
-      import KusaDataWeb.Format
+      alias KusaDataWeb.Format
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

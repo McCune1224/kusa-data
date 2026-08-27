@@ -1,49 +1,39 @@
 defmodule KusaDataWeb.UserRegistrationController do
   @moduledoc """
-  `POST /register` creates an account and starts a session.
+  Handles account registration via a standard HTML form post.
   """
 
   use KusaDataWeb, :controller
 
   alias KusaData.Accounts
 
-  @session_key :user_token
+  @doc """
+  Registers a new user from `params["user"]` (email, password).
 
-  def create(conn, %{"email" => email, "password" => password} = params) do
-    if Accounts.repo_configured?() do
-      case Accounts.register_user(%{email: email, password: password}) do
-        {:ok, user} ->
-          case Accounts.create_session(user) do
-            {:ok, _session, token} ->
-              conn
-              |> put_session(@session_key, token)
-              |> put_flash(:info, "Account created — welcome!")
-              |> redirect(to: params["return_to"] || "/")
+  On success, opens a session and redirects home with a welcome flash.
+  On failure, redirects back to the registration form with an error flash.
+  """
+  def create(conn, %{"user" => user_params}) do
+    case Accounts.register_user(user_params) do
+      {:ok, user} ->
+        case Accounts.create_session(user) do
+          {:ok, _session, token} ->
+            conn
+            |> put_session(:user_token, token)
+            |> configure_session(renew: true)
+            |> put_flash(:info, "Welcome!")
+            |> redirect(to: ~p"/")
 
-            {:error, _changeset} ->
-              redirect_register_error(conn, "Could not start a session. Please try again.")
-          end
+          {:error, _changeset} ->
+            conn
+            |> put_flash(:error, "Could not create account")
+            |> redirect(to: ~p"/auth?mode=register")
+        end
 
-        {:error, changeset} ->
-          message =
-            changeset
-            |> Ecto.Changeset.traverse_errors(fn {msg, _opts} -> msg end)
-            |> Enum.map(fn {field, errors} -> "#{field} #{Enum.join(errors, ", ")}" end)
-            |> Enum.join("; ")
-
-          redirect_register_error(conn, message)
-      end
-    else
-      redirect_register_error(
-        conn,
-        "Accounts need a PostgreSQL database — set DATABASE_URL and restart."
-      )
+      {:error, _changeset} ->
+        conn
+        |> put_flash(:error, "Could not create account")
+        |> redirect(to: ~p"/auth?mode=register")
     end
-  end
-
-  defp redirect_register_error(conn, message) do
-    conn
-    |> put_flash(:error, message)
-    |> redirect(to: "/auth?mode=register")
   end
 end

@@ -51,7 +51,6 @@ defmodule KusaDataWeb.Router do
       live "/notifications", NotificationsLive
     end
 
-    # Logout is a POST form so it carries the CSRF token.
     post "/log-in", UserSessionController, :create
     post "/register", UserRegistrationController, :create
     delete "/log-out", UserSessionController, :delete
@@ -76,7 +75,6 @@ defmodule KusaDataWeb.Router do
     get "/tournaments/:slug/export", TournamentController, :export
   end
 
-  # Enable LiveDashboard in development
   if Application.compile_env(:kusa_data, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 

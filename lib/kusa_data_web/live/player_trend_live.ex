@@ -1,278 +1,154 @@
 defmodule KusaDataWeb.PlayerTrendLive do
+  @moduledoc """
+  Monthly performance trend for a player: win rate plus best placement per month.
+  """
   use KusaDataWeb, :live_view
-
-  alias KusaData.Games
-  alias KusaData.Players
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
      assign(socket,
-       nav: :tournaments,
        player_id: nil,
-       game: nil,
-       data: nil,
-       graph: nil,
-       error: nil,
-       loading: true
+       gamer_tag: nil,
+       buckets: [],
+       total_sets: 0,
+       total_wins: 0,
+       overall_win_rate: 0.0
      )}
   end
 
   @impl true
-  def handle_params(params, _uri, socket) do
-    player_id = params["id"]
-    game = valid_game(params["game"])
+  def handle_params(params, _url, socket) do
+    player_id = parse_id(Map.get(params, "id"))
+    data = safe_trend(player_id)
 
-    socket =
-      socket
-      |> assign(player_id: player_id, data: nil, graph: nil, error: nil, loading: true)
-      |> spawn_load(player_id, game)
+    buckets = Enum.sort_by(data["buckets"] || [], & &1["month"], :desc)
 
-    {:noreply, socket}
+    {total_sets, total_wins} =
+      Enum.reduce(buckets, {0, 0}, fn bucket, {sets, wins} ->
+        {sets + (bucket["sets"] || 0), wins + (bucket["wins"] || 0)}
+      end)
+
+    overall_win_rate =
+      if total_sets > 0, do: round(total_wins * 1000 / total_sets) / 10, else: 0.0
+
+    {:noreply,
+     assign(socket,
+       player_id: player_id,
+       gamer_tag: data["gamer_tag"],
+       buckets: buckets,
+       total_sets: total_sets,
+       total_wins: total_wins,
+       overall_win_rate: overall_win_rate
+     )}
   end
 
-  @impl true
-  def handle_info({:trend_loaded, ref, result}, %{assigns: %{load_ref: ref}} = socket) do
-    case result do
-      {:ok, data, _status} ->
-        graph = build_trend_graph(data, socket.assigns.player_id)
+  defp parse_id(nil), do: nil
 
-        socket =
-          assign(socket, data: data, graph: graph, error: nil, loading: false, load_ref: nil)
-
-        {:noreply, push_event(socket, "atlas:data", %{type: "network", graph: graph})}
-
-      {:error, reason} ->
-        {:noreply, assign(socket, data: nil, graph: nil, error: reason, loading: false)}
+  defp parse_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {n, ""} -> n
+      {n, _} -> n
+      :error -> nil
     end
   end
 
-  def handle_info({:trend_loaded, _ref, _result}, socket), do: {:noreply, socket}
+  defp parse_id(id), do: id
 
-  defp spawn_load(socket, player_id, game) do
-    ref = make_ref()
-    parent = self()
+  defp safe_trend(nil), do: %{"buckets" => []}
 
-    Task.start(fn ->
-      send(parent, {:trend_loaded, ref, Players.trend(player_id, %{game: game})})
-    end)
-
-    assign(socket, load_ref: ref)
-  end
-
-  defp build_trend_graph(data, player_id) do
-    pid_int =
-      case Integer.parse(to_string(player_id)) do
-        {n, ""} -> n
-        _ -> player_id
-      end
-
-    gamer_tag = (data && data["gamer_tag"]) || "Player #{player_id}"
-    buckets = (data && data["buckets"]) || []
-
-    focal = %{
-      "player_id" => pid_int,
-      "gamer_tag" => gamer_tag,
-      "is_focal" => true,
-      "weight" => max(length(buckets), 1)
-    }
-
-    month_nodes =
-      buckets
-      |> Enum.take(8)
-      |> Enum.with_index()
-      |> Enum.map(fn {bucket, idx} ->
-        %{
-          "player_id" => pid_int + 10_000 + idx,
-          "gamer_tag" => bucket["month"],
-          "is_focal" => false,
-          "weight" => max(bucket["sets"] || 1, 1)
-        }
-      end)
-
-    edges =
-      month_nodes
-      |> Enum.map(fn node ->
-        %{"source" => pid_int, "target" => node["player_id"], "weight" => node["weight"]}
-      end)
-
-    nodes = [focal | month_nodes]
-
-    # If no buckets, add placeholder node so graph renders
-    nodes =
-      if month_nodes == [] do
-        [
-          focal,
-          %{
-            "player_id" => pid_int + 999_999,
-            "gamer_tag" => "No trend",
-            "is_focal" => false,
-            "weight" => 1
-          }
-        ]
-      else
-        nodes
-      end
-
-    %{"nodes" => nodes, "edges" => edges}
+  defp safe_trend(player_id) do
+    case KusaData.Players.trend(player_id, %{}) do
+      {:ok, data, _} -> data
+      {:error, _} -> %{"player_id" => player_id, "buckets" => []}
+    end
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div class="space-y-4 animate-fade-up">
-        <.btn
-          variant="ghost"
-          size="sm"
-          icon="hero-arrow-left"
-          navigate={~p"/player/#{@player_id}"}
-        >
-          Player page
-        </.btn>
-
-        <.card class="p-6">
-          <p class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
-            Player trend
-          </p>
-          <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[var(--text)]">
-            {if @data, do: @data["gamer_tag"], else: "Player #{@player_id}"}
-          </h1>
-          <p class="mt-1 text-[15px] text-[var(--muted)]">
-            Monthly win rate and best placement{game_suffix(@game)}
-          </p>
-          <%= if @data && @data["buckets"] != [] do %>
-            <div class="mt-4">
-              <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
-                Win rate sparkline
-              </p>
-              <svg
-                viewBox="0 0 300 40"
-                class="mt-2 h-10 w-full"
-                role="img"
-                aria-label="Trend sparkline"
+    <Layouts.app flash={@flash} current_user={@current_user} nav={:players}>
+      <div id={"player-trend-#{@player_id}"} class="flex flex-col gap-8">
+        <header class="flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-sm text-muted">
+            <%= if is_integer(@player_id) do %>
+              <.link
+                navigate={~p"/player/#{@player_id}"}
+                class="inline-flex items-center gap-1.5 transition-colors hover:text-accent"
               >
-                <polyline
-                  fill="none"
-                  stroke="var(--accent)"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                  stroke-linecap="round"
-                  points={trend_sparkline_points(@data["buckets"])}
-                />
-                <polyline
-                  fill="none"
-                  stroke="rgba(154,149,176,0.2)"
-                  stroke-width="1"
-                  stroke-dasharray="3 3"
-                  points="0,20 300,20"
-                />
-              </svg>
-              <div class="mt-1 flex justify-between font-mono text-[11px] text-[var(--muted)]">
-                <span>{(@data["buckets"] |> hd())["month"]}</span>
-                <span>{(@data["buckets"] |> List.last())["month"]}</span>
-              </div>
-            </div>
-          <% end %>
-        </.card>
-
-        <div class="grid gap-3 lg:grid-cols-[1.25fr_0.75fr]">
-          <div>
-            <%= if @loading do %>
-              <div class="space-y-3">
-                <.skeleton :for={_ <- 1..6} class="h-16 w-full rounded-[20px]" />
-              </div>
+                <span class="hero-arrow-left size-4"></span>
+                {if @gamer_tag, do: @gamer_tag, else: "Player ##{@player_id}"}
+              </.link>
             <% else %>
-              <%= if @data == nil || @data["buckets"] == [] do %>
-                <.empty_state icon="hero-chart-bar" title="No trend data">
-                  <:body>This player has no completed sets in the selected scope.</:body>
-                </.empty_state>
-              <% else %>
-                <div id="trend-buckets" class="space-y-3">
-                  <div
-                    :for={bucket <- @data["buckets"]}
-                    class="flex items-center gap-4 rounded-[20px] border border-[var(--border)] bg-[var(--surface)] px-5 py-4"
-                  >
-                    <span class="w-16 shrink-0 font-mono text-sm text-[var(--muted)]">
-                      {bucket["month"]}
-                    </span>
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center justify-between text-xs text-[var(--muted)]">
-                        <span>{bucket["wins"]}W-{bucket["losses"]}L</span>
-                        <span>{percent(bucket["win_rate"])}</span>
-                      </div>
-                      <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--surface2)] ring-1 ring-[var(--border)]">
-                        <div
-                          class="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
-                          style={"width: #{min(bucket["win_rate"], 100)}%"}
-                        >
-                        </div>
-                      </div>
-                    </div>
-                    <span class="w-24 shrink-0 text-right font-mono text-sm">
-                      <%= if bucket["best_placement"] do %>
-                        <span class="text-[var(--text)]">best #{ordinal(bucket["best_placement"])}</span>
-                      <% else %>
-                        <span class="text-[var(--muted)]">no placement</span>
-                      <% end %>
-                    </span>
-                  </div>
-                </div>
-              <% end %>
+              <span>{if @gamer_tag, do: @gamer_tag, else: "Player"}</span>
             <% end %>
           </div>
+          <h1 class="font-display text-3xl font-bold tracking-tight text-ink">Performance trend</h1>
+          <p class="text-sm text-muted">
+            Monthly win rate and best placement across recent events.
+          </p>
+        </header>
 
-          <.card class="p-5">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
-                Trend graph
-              </h2>
-              <span class="font-mono text-[11px] text-[var(--muted)]">months · network</span>
-            </div>
-            <div
-              id="player-network"
-              phx-hook="AtlasHook"
-              phx-update="ignore"
-              class="atlas-canvas mt-4 h-[320px] w-full overflow-hidden rounded-[16px] border border-[var(--border)] bg-[var(--surface2)]/40"
-            >
-            </div>
-            <p class="mt-3 text-xs text-[var(--muted)]">
-              Each peripheral node is a month bucket sized by sets.
-            </p>
-          </.card>
-        </div>
+        <section class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <.stat label="Months tracked" value={to_string(length(@buckets))} />
+          <.stat label="Sets played" value={to_string(@total_sets)} />
+          <.stat label="Wins" value={to_string(@total_wins)} />
+          <.stat label="Overall win rate" value={Format.percent(@overall_win_rate)} />
+        </section>
+
+        <%= if Enum.empty?(@buckets) do %>
+          <.empty
+            icon="hero-chart-bar"
+            title="No trend data yet"
+            description="This player doesn't have any completed sets in the recent window."
+          />
+        <% else %>
+          <.table>
+            <table>
+              <thead>
+                <tr class="border-b border-line text-left text-xs uppercase tracking-[0.08em] text-muted">
+                  <th class="px-4 py-3 font-semibold">Month</th>
+                  <th class="px-4 py-3 font-semibold">Sets</th>
+                  <th class="px-4 py-3 font-semibold">Record</th>
+                  <th class="px-4 py-3 font-semibold">Win rate</th>
+                  <th class="px-4 py-3 font-semibold">Best placement</th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for bucket <- @buckets do %>
+                  <tr class="border-b border-line transition-colors last:border-0 hover:bg-surface-2">
+                    <td class="px-4 py-3 font-medium text-ink">{bucket["month"]}</td>
+                    <td class="px-4 py-3 text-muted">{bucket["sets"]}</td>
+                    <td class="px-4 py-3 text-muted">{"#{bucket["wins"]}–#{bucket["losses"]}"}</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <div class="h-2 w-32 overflow-hidden rounded-pill bg-surface-2">
+                          <div
+                            class="h-full rounded-pill bg-accent transition-all"
+                            style={"width: #{bucket["win_rate"] || 0}%"}
+                          >
+                          </div>
+                        </div>
+                        <span class="text-xs font-medium text-muted">
+                          {Format.percent(bucket["win_rate"] || 0)}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3">
+                      <%= if bucket["best_placement"] do %>
+                        <.badge variant={:accent}>{bucket["best_placement"]}</.badge>
+                      <% else %>
+                        <span class="text-faint">—</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </.table>
+        <% end %>
       </div>
     </Layouts.app>
     """
-  end
-
-  defp trend_sparkline_points(buckets) do
-    total = max(length(buckets), 1)
-
-    buckets
-    |> Enum.with_index()
-    |> Enum.map(fn {bucket, idx} ->
-      x = if total == 1, do: 150, else: idx * 300 / (total - 1)
-      y = 38 - bucket["win_rate"] * 0.34
-      "#{Float.round(x * 1.0, 1)},#{Float.round(y * 1.0, 1)}"
-    end)
-    |> Enum.join(" ")
-  end
-
-  defp game_suffix(nil), do: ""
-  defp game_suffix(game), do: " · #{game}"
-
-  defp ordinal(1), do: "1st"
-  defp ordinal(2), do: "2nd"
-  defp ordinal(3), do: "3rd"
-  defp ordinal(n), do: "#{n}th"
-
-  defp valid_game(nil), do: nil
-
-  defp valid_game(slug) do
-    case Games.by_slug(slug) do
-      %{slug: _} -> slug
-      nil -> nil
-    end
   end
 end

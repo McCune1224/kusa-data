@@ -5,23 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="KUSA DATA — browse Melee tournaments, seeds, results, and player analytics from the start.gg API."
+      content="KusaData — browse Melee tournaments, seeds, results, and player analytics from the start.gg API."
     />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="KUSA DATA" suffix=" · KUSA DATA" phx-no-format>{assigns[:page_title]}</.live_title>
+    <.live_title default="KusaData" suffix=" · KusaData" phx-no-format>{assigns[:page_title]}</.live_title>
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236366f1'/%3E%3Cpath d='M17 7l-7 10h5l-1 8 8-11h-5l0-7z' fill='white'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2334d399'/%3E%3Cpath d='M17 7l-7 10h5l-1 8 8-11h-5l0-7z' fill='%2304140d'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#ffcc00" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <meta name="theme-color" content="#0a0b0d" />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>

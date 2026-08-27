@@ -1,295 +1,159 @@
 defmodule KusaDataWeb.PlayerH2HLive do
+  @moduledoc """
+  Head-to-head record between the URL player (`:id`) and a chosen opponent.
+  """
   use KusaDataWeb, :live_view
-
-  alias KusaData.Games
-  alias KusaData.Players
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
      assign(socket,
-       nav: :tournaments,
        player_id: nil,
        opponent_id: nil,
-       data: nil,
-       identities: %{},
-       graph: nil,
-       error: nil,
-       loading: true
+       form: to_form(%{}, as: :h2h),
+       h2h: nil,
+       error: nil
      )}
   end
 
   @impl true
-  def handle_params(params, _uri, socket) do
-    player_id = params["id"]
-    opponent_id = params["vs"]
-    game = valid_game(params["game"])
+  def handle_params(%{"id" => id}, _url, socket) do
+    {:noreply, assign(socket, player_id: parse_id(id), form: to_form(%{}, as: :h2h))}
+  end
 
-    socket =
-      socket
-      |> assign(
-        player_id: player_id,
-        opponent_id: opponent_id,
-        data: nil,
-        identities: %{},
-        graph: nil,
-        error: nil,
-        loading: true
-      )
-      |> spawn_load(player_id, opponent_id, game)
-
+  def handle_params(_params, _url, socket) do
     {:noreply, socket}
   end
 
   @impl true
-  def handle_info({:h2h_loaded, ref, result}, %{assigns: %{load_ref: ref}} = socket) do
-    case result do
-      {:ok, data, identities} ->
-        graph =
-          build_h2h_graph(socket.assigns.player_id, socket.assigns.opponent_id, identities, data)
+  def handle_event("lookup", params, socket) do
+    opponent = params["opponent"] || get_in(params, ["h2h", "opponent"])
+    player_id = socket.assigns.player_id
 
-        socket =
-          assign(socket,
-            data: data,
-            identities: identities,
-            graph: graph,
-            error: nil,
-            loading: false,
-            load_ref: nil
-          )
+    case {player_id, parse_id(opponent)} do
+      {nil, _} ->
+        {:noreply, assign(socket, error: "Player not found.")}
 
-        {:noreply, push_event(socket, "atlas:data", %{type: "network", graph: graph})}
+      {_, nil} ->
+        {:noreply, assign(socket, error: "Enter a numeric opponent player ID.")}
 
-      {:error, reason} ->
-        {:noreply, assign(socket, data: nil, graph: nil, error: reason, loading: false)}
+      {player_a, player_b} ->
+        {:noreply,
+         socket
+         |> assign(:opponent_id, player_b)
+         |> assign(:error, nil)
+         |> assign(:h2h, safe_h2h(player_a, player_b))}
     end
   end
 
-  def handle_info({:h2h_loaded, _ref, _result}, socket), do: {:noreply, socket}
+  defp safe_h2h(player_a, player_b) do
+    case KusaData.Players.head_to_head(player_a, player_b, %{}) do
+      {:ok, record, _} ->
+        record
 
-  defp spawn_load(socket, player_id, opponent_id, game) do
-    ref = make_ref()
-    parent = self()
-
-    Task.start(fn ->
-      result =
-        with {:ok, data, _} <- Players.head_to_head(player_id, opponent_id, %{game: game}),
-             {:ok, a, _} <- Players.profile(player_id),
-             {:ok, b, _} <- Players.profile(opponent_id) do
-          {:ok, data, %{a: a, b: b}}
-        else
-          {:error, reason} -> {:error, reason}
-          other -> {:error, other}
-        end
-
-      send(parent, {:h2h_loaded, ref, result})
-    end)
-
-    assign(socket, load_ref: ref)
-  end
-
-  defp build_h2h_graph(player_id, opponent_id, identities, data) do
-    tag_a = identity_tag(identities, :a, player_id)
-    tag_b = identity_tag(identities, :b, opponent_id)
-    sets = (data && data["sets"]) || 0
-    weight = max(sets, 1)
-
-    nodes = [
-      %{
-        "player_id" => to_int(player_id),
-        "gamer_tag" => tag_a,
-        "is_focal" => true,
-        "weight" => ((data && data["player_a_wins"]) || 0) + 1
-      },
-      %{
-        "player_id" => to_int(opponent_id),
-        "gamer_tag" => tag_b,
-        "is_focal" => false,
-        "weight" => ((data && data["player_b_wins"]) || 0) + 1
-      }
-    ]
-
-    edge = %{
-      "source" => to_int(player_id),
-      "target" => to_int(opponent_id),
-      "weight" => weight
-    }
-
-    %{"nodes" => nodes, "edges" => [edge]}
-  end
-
-  defp to_int(id) when is_integer(id), do: id
-
-  defp to_int(id) when is_binary(id) do
-    case Integer.parse(id) do
-      {n, ""} -> n
-      _ -> id
+      {:error, _} ->
+        %{"sets" => 0, "player_a_wins" => 0, "player_b_wins" => 0, "unresolved_sets" => 0}
     end
   end
 
-  defp to_int(id), do: id
+  defp parse_id(nil), do: nil
+
+  defp parse_id(value) when is_binary(value) do
+    case String.trim(value) |> Integer.parse() do
+      {int, ""} -> int
+      _ -> nil
+    end
+  end
+
+  defp parse_id(value) when is_integer(value), do: value
+  defp parse_id(_), do: nil
+
+  defp player_h2h_id(nil), do: "player-h2h"
+  defp player_h2h_id(player_id), do: "player-h2h-#{player_id}"
 
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-      <div class="space-y-4 animate-fade-up">
-        <.btn
-          variant="ghost"
-          size="sm"
-          icon="hero-arrow-left"
-          navigate={~p"/player/#{@player_id}"}
-        >
-          Player page
-        </.btn>
-
-        <div class="rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-6">
-          <p class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
-            Head-to-head
-          </p>
-          <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[var(--text)]">
-            {identity_tag(@identities, :a, @player_id)} vs {identity_tag(
-              @identities,
-              :b,
-              @opponent_id
-            )}
+    <Layouts.app flash={@flash} current_user={@current_user} nav={:players}>
+      <div id={player_h2h_id(@player_id)} class="mx-auto flex max-w-3xl flex-col gap-8">
+        <header class="flex flex-col gap-1">
+          <span class="inline-flex w-fit items-center gap-2 rounded-pill border border-accent-line bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
+            <span class="hero-squares-2x2 size-3.5"></span> Head-to-head
+          </span>
+          <h1 class="mt-3 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            Player matchup
           </h1>
-          <p class="mt-1 text-sm text-[var(--muted)]">Bento duel view with central edge graph</p>
-        </div>
+          <p class="text-sm text-muted">
+            Compare the record for player
+            <%= if @player_id do %>
+              <span class="font-semibold text-ink">#{@player_id}</span>
+            <% else %>
+              <span class="font-semibold text-ink">—</span>
+            <% end %>
+            against any opponent.
+          </p>
+        </header>
 
-        <%= if @loading do %>
-          <div class="grid gap-3 sm:grid-cols-3">
-            <.skeleton :for={_ <- 1..3} class="h-28 rounded-[20px]" />
+        <.card>
+          <.form
+            for={@form}
+            id="player-h2h-form"
+            phx-submit="lookup"
+            class="flex flex-col gap-4 sm:flex-row sm:items-end"
+          >
+            <.input
+              field={@form[:opponent]}
+              id="opponent"
+              name="opponent"
+              type="text"
+              label="Opponent player ID"
+              placeholder="e.g. 123456"
+            />
+            <.button type="submit" class="shrink-0">Look up</.button>
+          </.form>
+        </.card>
+
+        <%= if @error do %>
+          <div class="rounded-card border border-danger/50 bg-danger-soft px-4 py-3 text-sm text-danger">
+            {@error}
           </div>
-          <.skeleton class="h-[320px] rounded-[20px]" />
-        <% else %>
-          <%= if @data == nil do %>
-            <.empty_state icon="hero-exclamation-triangle" title="Couldn't load the matchup">
-              <:body>The start.gg API may be unhappy right now — try again in a moment.</:body>
-            </.empty_state>
-          <% else %>
-            <div class="grid gap-3 lg:grid-cols-[1fr_auto_1fr]">
-              <.card class="p-6 text-center">
-                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-[var(--surface2)] ring-1 ring-[var(--border)]">
-                  <.avatar name={identity_tag(@identities, :a, @player_id)} class="size-10" />
-                </div>
-                <div class="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
-                  {identity_tag(@identities, :a, @player_id)}
-                </div>
-                <div class="mt-2 font-mono text-4xl font-semibold text-emerald-400 tabular-nums">
-                  {@data["player_a_wins"]}
-                </div>
-                <div class="mt-1 text-sm text-[var(--muted)]">wins</div>
-                <.link
-                  navigate={~p"/player/#{@player_id}"}
-                  class="mt-3 inline-flex rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 py-1 text-xs text-[var(--muted)] hover:border-[var(--border2)] hover:text-[var(--text)]"
-                >
-                  View profile
-                </.link>
-              </.card>
+        <% end %>
 
-              <div class="flex flex-col items-center justify-center gap-2 py-2 lg:px-2">
-                <span class="rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-black uppercase tracking-widest text-[#08070b]">VS</span>
-                <span class="font-mono text-xs text-[var(--muted)]">{@data["sets"]} sets</span>
-                <span class="text-xs text-[var(--muted)]">{@data["unresolved_sets"]} unresolved</span>
-              </div>
-
-              <.card class="p-6 text-center">
-                <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-[var(--surface2)] ring-1 ring-[var(--border)]">
-                  <.avatar name={identity_tag(@identities, :b, @opponent_id)} class="size-10" />
-                </div>
-                <div class="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
-                  {identity_tag(@identities, :b, @opponent_id)}
-                </div>
-                <div class="mt-2 font-mono text-4xl font-semibold text-rose-400 tabular-nums">
-                  {@data["player_b_wins"]}
-                </div>
-                <div class="mt-1 text-sm text-[var(--muted)]">wins</div>
-                <.link
-                  navigate={~p"/player/#{@opponent_id}"}
-                  class="mt-3 inline-flex rounded-full border border-[var(--border)] bg-[var(--surface2)] px-3 py-1 text-xs text-[var(--muted)] hover:border-[var(--border2)] hover:text-[var(--text)]"
-                >
-                  View profile
-                </.link>
-              </.card>
+        <%= if @h2h do %>
+          <section class="flex flex-col gap-4">
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <.stat
+                label={"Player #" <> to_string(@player_id) <> " wins"}
+                value={to_string(@h2h["player_a_wins"])}
+                sub={"losses: #{@h2h["player_b_wins"]}"}
+              />
+              <.stat
+                label={"Opponent #" <> to_string(@opponent_id) <> " wins"}
+                value={to_string(@h2h["player_b_wins"])}
+                sub={"losses: #{@h2h["player_a_wins"]}"}
+              />
+              <.stat label="Total sets" value={to_string(@h2h["sets"])} />
+              <.stat
+                label="Unresolved sets"
+                value={to_string(@h2h["unresolved_sets"])}
+                sub="name-only, uncounted"
+              />
             </div>
 
-            <div class="grid gap-3 lg:grid-cols-[1.4fr_0.6fr]">
-              <.card class="p-5">
-                <div class="flex items-center justify-between">
-                  <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
-                    Edge graph
-                  </h2>
-                  <span class="font-mono text-[11px] text-[var(--muted)]">H2H network · {length(
-                    (@graph && @graph["edges"]) || []
-                  )} edge</span>
-                </div>
-                <div
-                  id="player-network"
-                  phx-hook="AtlasHook"
-                  phx-update="ignore"
-                  class="atlas-canvas mt-4 h-[320px] w-full overflow-hidden rounded-[16px] border border-[var(--border)] bg-[var(--surface2)]/40"
-                >
-                </div>
-                <p class="mt-3 text-xs text-[var(--muted)]">
-                  Central edge visualizes the duel. Nodes scale with wins.
-                </p>
-              </.card>
-
-              <.card class="p-5">
-                <h2 class="text-xs font-medium uppercase tracking-[0.18em] text-[var(--muted)]">
-                  Record
-                </h2>
-                <div id="h2h-record" class="mt-4 space-y-3">
-                  <div class="flex items-center justify-between rounded-[16px] border border-[var(--border)] bg-[var(--surface2)]/40 px-4 py-4">
-                    <span class="text-sm text-[var(--muted)]">Sets played</span>
-                    <span class="font-mono text-lg font-semibold text-[var(--text)]">{@data["sets"]}</span>
-                  </div>
-                  <div class="flex items-center justify-between rounded-[16px] border border-[var(--border)] bg-[var(--surface2)]/40 px-4 py-4">
-                    <span class="text-sm text-[var(--muted)]">Unresolved</span>
-                    <span class="font-mono text-lg font-semibold text-amber-300">{@data[
-                      "unresolved_sets"
-                    ]}</span>
-                  </div>
-                  <div class="rounded-[16px] bg-[var(--accent)]/10 px-4 py-3 ring-1 ring-[var(--accent)]/20">
-                    <p class="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">
-                      Outcome
-                    </p>
-                    <p class="mt-1 font-mono text-sm text-[var(--text)]">
-                      <%= cond do %>
-                        <% @data["player_a_wins"] > @data["player_b_wins"] -> %>
-                          {identity_tag(@identities, :a, @player_id)} leads
-                        <% @data["player_b_wins"] > @data["player_a_wins"] -> %>
-                          {identity_tag(@identities, :b, @opponent_id)} leads
-                        <% true -> %>
-                          Even
-                      <% end %>
-                      · {@data["player_a_wins"]}-{@data["player_b_wins"]}
-                    </p>
-                  </div>
-                </div>
-              </.card>
+            <div class="rounded-card border border-line bg-surface px-5 py-4 text-sm">
+              <p class="flex flex-wrap items-center gap-2 text-muted">
+                <span class="font-semibold text-ink">Player #{@player_id}</span>
+                <span class="text-faint">{@h2h["player_a_wins"]} – {@h2h["player_b_wins"]}</span>
+                <span class="font-semibold text-ink">Opponent #{@opponent_id}</span>
+                <span class="text-faint">
+                  across {@h2h["sets"]} set{if @h2h["sets"] != 1, do: "s"}
+                </span>
+              </p>
             </div>
-          <% end %>
+          </section>
         <% end %>
       </div>
     </Layouts.app>
     """
-  end
-
-  defp identity_tag(identities, key, fallback) do
-    case Map.get(identities, key) do
-      %{"gamer_tag" => tag} -> tag
-      _ -> "Player #{fallback}"
-    end
-  end
-
-  defp valid_game(nil), do: nil
-
-  defp valid_game(slug) do
-    case Games.by_slug(slug) do
-      %{slug: _} -> slug
-      nil -> nil
-    end
   end
 end

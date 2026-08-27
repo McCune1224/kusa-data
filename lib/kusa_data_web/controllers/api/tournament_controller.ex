@@ -1,58 +1,81 @@
 defmodule KusaDataWeb.API.TournamentController do
   @moduledoc """
-  Full tournament export (JSON or CSV) reusing the UI contexts and cache keys.
+  Serves a CSV export of a tournament's per-event standings.
 
-  JSON returns the normalized `%{tournament, events}` map from
-  `KusaData.Tournaments.export/1`. CSV flattens every event's entrant rows
-  into one deterministic table.
+  A `GET /api/tournament/:slug/export` request returns `text/csv` built from
+  the tournament's per-event analytics: one row per standings entry, with the
+  computed wins and losses derived from the event's recorded sets.
   """
 
   use KusaDataWeb, :controller
 
+  alias KusaData.CSV
   alias KusaData.Tournaments
-  alias KusaDataWeb.API.Export
-
-  @export_columns ~w(event_id event_name tournament_name entrant_id entrant_name player_id seed placement seed_delta upset reason wins losses sets_played games_won games_lost)
 
   def export(conn, %{"slug" => slug}) do
     case Tournaments.export(slug) do
-      {:ok, %{"events" => events} = data, _} ->
-        case format(conn) do
-          "csv" ->
-            Export.csv(conn, @export_columns, flatten_events(events))
+      {:ok, %{"events" => events}, _} ->
+        csv = build_csv(events)
 
-          "json" ->
-            Export.json(conn, data)
+        conn
+        |> put_resp_content_type("text/csv")
+        |> put_resp_header("content-disposition", "attachment; filename=\"#{slug}.csv\"")
+        |> send_resp(:ok, csv)
 
-          nil ->
-            Export.json(conn, data)
-
-          _ ->
-            Export.error(conn, 422, "invalid export format (use ?format=json or ?format=csv)")
-        end
-
-      {:error, :not_found} ->
-        Export.error(conn, 404, "unknown tournament")
-
-      {:error, _reason} ->
-        Export.error(conn, 422, "tournament data unavailable right now")
+      {:error, _} ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "not_found"})
     end
   end
 
-  defp flatten_events(events) do
-    Enum.flat_map(events, fn analytics ->
-      analysis = analytics["analysis"]
-      recap = analysis["context"]
+  defp build_csv(events) do
+    columns = ["event", "placement", "player", "wins", "losses"]
 
-      Enum.map(analysis["entrants"], fn entrant ->
-        entrant
-        |> Map.put("entrant_name", entrant["name"])
-        |> Map.put("event_id", recap["event_id"])
-        |> Map.put("event_name", recap["event_name"])
-        |> Map.put("tournament_name", recap["tournament_name"])
+    rows =
+      events
+      |> Enum.flat_map(fn analytics ->
+        event_name = analytics["event"]["name"]
+        set_stats = build_set_stats(analytics["sets"])
+
+        (analytics["results"] || [])
+        |> Enum.sort_by(& &1["placement"])
+        |> Enum.map(fn standing ->
+          entrant_id = standing["entrant_id"]
+          {wins, losses} = Map.get(set_stats, entrant_id, {0, 0})
+
+          [event_name, standing["placement"], standing["name"], wins, losses]
+        end)
       end)
-    end)
+
+    CSV.encode(columns, rows)
   end
 
-  defp format(conn), do: conn.query_params["format"]
+  # Derives a per-entrant win/loss tally from the recorded sets. A set counts
+  # only when it has two entrants and a known winner, so byes and broken sets
+  # are skipped rather than mis-attributed.
+  defp build_set_stats(sets) do
+    Enum.reduce(sets || [], %{}, fn set, acc ->
+      winner_id = set["winner_id"]
+
+      entrants =
+        (set["slots"] || [])
+        |> Enum.map(& &1["entrant_id"])
+        |> Enum.reject(&is_nil/1)
+
+      if length(entrants) >= 2 and not is_nil(winner_id) do
+        Enum.reduce(entrants, acc, fn entrant_id, acc ->
+          {wins, losses} = Map.get(acc, entrant_id, {0, 0})
+
+          if entrant_id == winner_id do
+            Map.put(acc, entrant_id, {wins + 1, losses})
+          else
+            Map.put(acc, entrant_id, {wins, losses + 1})
+          end
+        end)
+      else
+        acc
+      end
+    end)
+  end
 end
