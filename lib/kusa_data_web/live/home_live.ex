@@ -99,17 +99,15 @@ defmodule KusaDataWeb.HomeLive do
   end
 
   defp spawn_load(socket, page, reset) do
-    if pid = socket.assigns[:load_pid], do: Process.exit(pid, :kill)
     ref = make_ref()
     parent = self()
     query = build_query(socket.assigns, page)
 
-    {:ok, pid} =
-      Task.start(fn ->
-        send(parent, {:load_result, ref, Tournaments.browse(query)})
-      end)
+    Task.start(fn ->
+      send(parent, {:load_result, ref, Tournaments.browse(query)})
+    end)
 
-    assign(socket, load_ref: ref, load_pid: pid, page: page, reset: reset)
+    assign(socket, load_ref: ref, page: page, reset: reset)
   end
 
   defp build_query(assigns, page) do

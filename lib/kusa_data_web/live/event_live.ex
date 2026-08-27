@@ -153,38 +153,34 @@ defmodule KusaDataWeb.EventLive do
   end
 
   defp spawn_event_load(socket) do
-    if pid = socket.assigns[:event_pid], do: Process.exit(pid, :kill)
     identifier = socket.assigns.identifier
     ref = make_ref()
     parent = self()
 
-    {:ok, pid} =
-      Task.start(fn ->
-        send(parent, {:event_loaded, ref, Events.get(identifier)})
-      end)
+    Task.start(fn ->
+      send(parent, {:event_loaded, ref, Events.get(identifier)})
+    end)
 
-    assign(socket, event_ref: ref, event_pid: pid)
+    assign(socket, event_ref: ref)
   end
 
   defp spawn_tab_load(socket, event, tab) do
-    if pid = socket.assigns[:tab_pid], do: Process.exit(pid, :kill)
     ref = make_ref()
     parent = self()
 
-    {:ok, pid} =
-      Task.start(fn ->
-        result =
-          case tab do
-            "seeds" -> Events.seeding(event["id"])
-            "results" -> Events.results(event["id"])
-            "standings" -> Events.analytics(event["id"])
-            "bracket" -> KusaData.Brackets.for_event(event["id"])
-          end
+    Task.start(fn ->
+      result =
+        case tab do
+          "seeds" -> Events.seeding(event["id"])
+          "results" -> Events.results(event["id"])
+          "standings" -> Events.analytics(event["id"])
+          "bracket" -> KusaData.Brackets.for_event(event["id"])
+        end
 
-        send(parent, {:tab_loaded, ref, result})
-      end)
+      send(parent, {:tab_loaded, ref, result})
+    end)
 
-    assign(socket, tab_ref: ref, tab_pid: pid, loading: true)
+    assign(socket, tab_ref: ref, loading: true)
   end
 
   @impl true
