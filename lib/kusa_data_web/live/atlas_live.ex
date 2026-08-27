@@ -1,11 +1,12 @@
 defmodule KusaDataWeb.AtlasLive do
   @moduledoc """
-  Geographic bubble map of the Melee scene.
+  Blocky ranked Atlas for the 2026 Melee season.
 
-  `/atlas` renders a server-side SVG bubble map of tournament regions using
-  the static centroids from `KusaData.Atlas.map_data/0`. `/atlas/player/:id`
-  renders a player's opponent network (also server-side SVG) from
-  `KusaData.Players.atlas/2`. Both render without any JS hook.
+  Primary view is a dense ranked grid and table. Data loads asynchronously so
+  the page renders a skeleton immediately and fills when `KusaData.Atlas.map_data/0`
+  resolves. A small secondary minimap (grid-placed, max radius 14) is available
+  but never the primary and never geographic-clustered. `/atlas/player/:id`
+  renders a player's opponent network as a server-side SVG.
   """
   use KusaDataWeb, :live_view
 
@@ -17,11 +18,17 @@ defmodule KusaDataWeb.AtlasLive do
     {:ok,
      assign(socket,
        view: :map,
+       loading: false,
+       map_loaded: false,
+       tiles: [],
+       ranked: [],
+       max_tournaments: 0,
        bubbles: [],
        grid_lines: [],
        region_count: 0,
        total_tournaments: 0,
        total_attendees: 0,
+       minimap: [],
        gamer_tag: nil,
        graph_nodes: [],
        graph_edges: [],
@@ -34,32 +41,47 @@ defmodule KusaDataWeb.AtlasLive do
   def handle_params(params, _url, socket) do
     socket =
       case Map.get(params, "id") do
-        nil -> load_map(socket)
+        nil -> schedule_map_load(socket)
         id -> load_player(socket, id)
       end
 
     {:noreply, socket}
   end
 
-  # --- Map (region) view ----------------------------------------------------
-
-  defp load_map(socket) do
+  @impl true
+  def handle_info(:load_map, socket) do
     regions = safe_map_data()
-    bubbles = build_bubbles(regions)
+    tiles = build_tiles(regions)
+    ranked = tiles
+    max_t = tiles |> Enum.map(& &1.tournaments) |> Enum.max(fn -> 0 end)
+    minimap = build_minimap(tiles, max_t)
 
-    assign(socket,
-      view: :map,
-      bubbles: bubbles,
-      grid_lines: build_grid(),
-      region_count: length(regions),
-      total_tournaments: sum(regions, "tournaments"),
-      total_attendees: sum(regions, "attendees"),
-      gamer_tag: nil,
-      graph_nodes: [],
-      graph_edges: [],
-      excluded: 0,
-      opponent_count: 0
-    )
+    {:noreply,
+     assign(socket,
+       view: :map,
+       loading: false,
+       map_loaded: true,
+       tiles: tiles,
+       ranked: ranked,
+       max_tournaments: max_t,
+       bubbles: [],
+       grid_lines: [],
+       minimap: minimap,
+       region_count: length(regions),
+       total_tournaments: sum(regions, "tournaments"),
+       total_attendees: sum(regions, "attendees")
+     )}
+  end
+
+  def handle_info(_msg, socket), do: {:noreply, socket}
+
+  defp schedule_map_load(socket) do
+    if socket.assigns.map_loaded or socket.assigns.loading do
+      assign(socket, view: :map)
+    else
+      send(self(), :load_map)
+      assign(socket, view: :map, loading: true)
+    end
   end
 
   defp safe_map_data do
@@ -69,70 +91,51 @@ defmodule KusaDataWeb.AtlasLive do
     end
   end
 
-  # Project lat/lng to the 1000x500 equirectangular viewBox.
-  defp project(lat, lng) do
-    x = (lng + 180) / 360 * 1000
-    y = (90 - lat) / 180 * 500
-    {x, y}
-  end
+  defp build_tiles(regions) do
+    sorted = Enum.sort_by(regions, &(&1["tournaments"] || 0), :desc)
+    max_c = sorted |> Enum.map(&(&1["tournaments"] || 0)) |> Enum.max(fn -> 0 end)
 
-  defp build_bubbles(regions) do
-    counts = Enum.map(regions, &(&1["tournaments"] || 0))
-    {min_c, max_c} = bounds(counts)
-
-    Enum.map(regions, fn region ->
-      {x, y} = project(region["lat"], region["lng"])
+    Enum.map(sorted, fn region ->
       count = region["tournaments"] || 0
+      attendees = region["attendees"] || 0
+      pct = if max_c == 0, do: 0, else: round(count / max_c * 100)
 
       %{
-        key: to_string(region["country"]) <> "-" <> to_string(region["state"]),
-        x: x,
-        y: y,
-        r: scale_radius(count, min_c, max_c),
         label: region["label"],
-        sub: "#{count} event#{if(count == 1, do: "", else: "s")}"
+        country: region["country"],
+        state: region["state"],
+        tournaments: count,
+        attendees: attendees,
+        bar_pct: pct,
+        key: to_string(region["country"]) <> "-" <> to_string(region["state"])
       }
     end)
   end
 
-  defp bounds([]), do: {0, 0}
-
-  defp bounds(counts) do
-    {Enum.min(counts), Enum.max(counts)}
+  defp build_minimap(tiles, max_t) do
+    tiles
+    |> Enum.with_index()
+    |> Enum.map(fn {tile, idx} ->
+      col = rem(idx, 10)
+      row = div(idx, 10)
+      x = col * 100 + 50
+      y = row * 50 + 30
+      r = scale_minimap_radius(tile.tournaments, max_t)
+      %{x: x, y: y, r: r, label: tile.label}
+    end)
   end
 
-  defp scale_radius(count, min_c, max_c) do
-    min_r = 4.0
-    max_r = 40.0
+  defp scale_minimap_radius(_count, 0), do: 6.0
 
-    if max_c <= min_c do
-      (min_r + max_r) / 2.0
-    else
-      min_r + (count - min_c) / (max_c - min_c) * (max_r - min_r)
-    end
-  end
-
-  defp build_grid do
-    vlines =
-      for lng <- [-150, -90, -30, 30, 90, 150] do
-        x = (lng + 180) / 360 * 1000
-        %{x1: x, y1: 0.0, x2: x, y2: 500.0}
-      end
-
-    hlines =
-      for lat <- [-60, -30, 0, 30, 60] do
-        y = (90 - lat) / 180 * 500
-        %{x1: 0.0, y1: y, x2: 1000.0, y2: y}
-      end
-
-    vlines ++ hlines
+  defp scale_minimap_radius(count, max_c) do
+    min_r = 6.0
+    max_r = 14.0
+    min_r + count / max_c * (max_r - min_r)
   end
 
   defp sum(regions, key) do
     Enum.reduce(regions, 0, fn region, acc -> acc + (region[key] || 0) end)
   end
-
-  # --- Player (network) view ------------------------------------------------
 
   defp load_player(socket, id) when is_binary(id) do
     case Integer.parse(id) do
@@ -156,13 +159,18 @@ defmodule KusaDataWeb.AtlasLive do
 
     assign(socket,
       view: :player,
+      loading: false,
+      map_loaded: false,
       gamer_tag: map["gamer_tag"],
       graph_nodes: layout.nodes,
       graph_edges: layout.edges,
       excluded: excluded,
       opponent_count: length(opponents),
+      tiles: [],
+      ranked: [],
       bubbles: [],
       grid_lines: [],
+      minimap: [],
       region_count: 0,
       total_tournaments: 0,
       total_attendees: 0
@@ -172,21 +180,24 @@ defmodule KusaDataWeb.AtlasLive do
   defp assign_empty_player(socket, id) do
     assign(socket,
       view: :player,
+      loading: false,
+      map_loaded: false,
       gamer_tag: "Player #{id}",
       graph_nodes: [],
       graph_edges: [],
       excluded: 0,
       opponent_count: 0,
+      tiles: [],
+      ranked: [],
       bubbles: [],
       grid_lines: [],
+      minimap: [],
       region_count: 0,
       total_tournaments: 0,
       total_attendees: 0
     )
   end
 
-  # Place the focal node at the center and fan opponents around a ring; bubble
-  # radius scales with the number of shared sets (weight).
   defp build_graph(focal, opponents) do
     cx = 500.0
     cy = 250.0
@@ -238,8 +249,6 @@ defmodule KusaDataWeb.AtlasLive do
   defp weight_of([focal | _]), do: focal["weight"] || 0
   defp weight_of(_), do: 0
 
-  # --- Render --------------------------------------------------------------
-
   @impl true
   def render(assigns) do
     ~H"""
@@ -249,7 +258,7 @@ defmodule KusaDataWeb.AtlasLive do
           <div class="mb-8 flex flex-col gap-2">
             <h1 class="font-display text-3xl font-bold tracking-tight text-ink">Atlas</h1>
             <p class="max-w-2xl text-sm text-muted">
-              Where the Melee scene shows up. Bubble size reflects the number of tournaments in each region across the 2026 season.
+              Where the Melee scene shows up. Dense ranked view of tournaments by region across the 2026 season.
             </p>
           </div>
 
@@ -260,41 +269,94 @@ defmodule KusaDataWeb.AtlasLive do
             <.stat label="Season" value="2026" />
           </div>
 
-          <%= if Enum.empty?(@bubbles) do %>
-            <.empty
-              class="mt-6"
-              icon="hero-map"
-              title="No regions to map yet"
-              description="Tournament regions will appear here once the season data loads."
-            />
-          <% else %>
-            <div class="atlas-canvas" id="atlas-map">
-              <svg
-                class="atlas-svg"
-                viewBox="0 0 1000 500"
-                role="img"
-                aria-label="Tournament region bubble map"
-              >
-                <%= for line <- @grid_lines do %>
-                  <line class="atlas-grid-line" x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+          <%= if @loading do %>
+            <div id="atlas-skeleton" class="space-y-6">
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <%= for _ <- 1..8 do %>
+                  <div class="skeleton h-[132px] rounded-none border border-line bg-surface"></div>
                 <% end %>
-                <%= for bubble <- @bubbles do %>
-                  <g class="atlas-bubble">
-                    <circle class="atlas-bubble-fill" cx={bubble.x} cy={bubble.y} r={bubble.r}>
-                      <title>{bubble.label} · {bubble.sub}</title>
-                    </circle>
-                    <text
-                      class="atlas-label"
-                      x={bubble.x}
-                      y={bubble.y - bubble.r - 4}
-                      text-anchor="middle"
-                    >
-                      {bubble.label}
-                    </text>
-                  </g>
-                <% end %>
-              </svg>
+              </div>
+              <div class="skeleton h-[240px] rounded-none border border-line bg-surface"></div>
             </div>
+          <% else %>
+            <%= if Enum.empty?(@tiles) do %>
+              <.empty
+                class="mt-6"
+                icon="hero-map"
+                title="No regions to map yet"
+                description="Tournament regions will appear here once the season data loads."
+              />
+            <% else %>
+              <div id="atlas-grid" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <%= for tile <- @tiles do %>
+                  <div class="atlas-tile flex flex-col justify-between rounded-none border border-line bg-surface p-4">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="text-xs font-bold uppercase tracking-[0.08em] text-muted">{tile.label}</p>
+                      <span class="rounded-none border border-line bg-surface-2 px-2 py-0.5 text-xs font-mono font-semibold text-ink">
+                        {tile.tournaments}
+                      </span>
+                    </div>
+                    <div class="mt-3">
+                      <p class="font-display text-2xl font-bold tracking-tight text-ink">{tile.tournaments}</p>
+                      <p class="text-xs font-mono uppercase tracking-[0.06em] text-faint">
+                        {tile.attendees} attendees
+                      </p>
+                    </div>
+                    <div class="mt-4 h-1 w-full bg-surface-3">
+                      <div class="atlas-bar h-1 bg-accent" style={"width: #{tile.bar_pct}%"}></div>
+                    </div>
+                    <p class="mt-2 text-xs font-mono text-faint">{tile.country} · {tile.state}</p>
+                  </div>
+                <% end %>
+              </div>
+
+              <div class="mt-8 overflow-x-auto rounded-none border border-line bg-surface">
+                <table class="w-full border-collapse text-sm">
+                  <thead>
+                    <tr class="border-b border-line bg-surface-2 text-left">
+                      <th class="px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">Rank</th>
+                      <th class="px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">Region</th>
+                      <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                        Tournaments
+                      </th>
+                      <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                        Attendees
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <%= for {tile, idx} <- Enum.with_index(@ranked, 1) do %>
+                      <tr class="border-b border-line last:border-0">
+                        <td class="px-4 py-2 font-mono text-xs text-faint">#{idx}</td>
+                        <td class="px-4 py-2 font-semibold text-ink">{tile.label}</td>
+                        <td class="px-4 py-2 text-right font-mono text-ink">{tile.tournaments}</td>
+                        <td class="px-4 py-2 text-right font-mono text-muted">{tile.attendees}</td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+
+              <%= if length(@minimap) > 0 do %>
+                <div class="atlas-canvas mt-8 rounded-none border border-line bg-surface p-2">
+                  <p class="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">Minimap · grid-placed · r 6–14</p>
+                  <svg
+                    class="atlas-svg"
+                    viewBox="0 0 1000 320"
+                    role="img"
+                    aria-label="Region minimap grid"
+                  >
+                    <%= for dot <- @minimap do %>
+                      <g class="atlas-bubble">
+                        <circle class="atlas-bubble-fill" cx={dot.x} cy={dot.y} r={dot.r}>
+                          <title>{dot.label}</title>
+                        </circle>
+                      </g>
+                    <% end %>
+                  </svg>
+                </div>
+              <% end %>
+            <% end %>
           <% end %>
         <% else %>
           <div class="mb-8 flex flex-col gap-2">
@@ -321,7 +383,7 @@ defmodule KusaDataWeb.AtlasLive do
               description="We couldn't build an opponent network for this player yet."
             />
           <% else %>
-            <div class="atlas-canvas" id="atlas-network">
+            <div class="atlas-canvas rounded-none border border-line bg-surface" id="atlas-network">
               <svg
                 class="atlas-svg"
                 viewBox="0 0 1000 500"

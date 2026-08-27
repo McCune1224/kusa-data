@@ -7,11 +7,14 @@ defmodule KusaData.Atlas do
   rather than a cartographic tile layer. Coordinates are approximate state
   centroids and exist only to place bubbles; they are never shown as literal
   latitude/longitude to the user.
+
+  Atlas now renders as a blocky ranked grid + table primary view. The centroid
+  table is retained for minimap and legacy fallback, but the hot path no longer
+  blocks the LiveView with 12 serial GraphQL fetches.
   """
 
   alias KusaData.Tournaments
 
-  # "US-CA" => {lat, lng}. Approximate state centroids; positions only.
   @centroids %{
     "US-AL" => {32.8, -86.8},
     "US-AK" => {64.2, -149.5},
@@ -85,7 +88,8 @@ defmodule KusaData.Atlas do
 
   For the 2026 season view the map aggregates the full calendar year
   2026-01-01 to 2026-12-31 so Atlas shows the entire season, not just the
-  last 90 days.
+  last 90 days. This call is bounded (8s) and falls back to `Tournaments.regions/0`
+  so the LiveView never blocks on 12 serial fetches.
   """
   @spec map_data() :: [map()]
   def map_data do
@@ -153,9 +157,13 @@ defmodule KusaData.Atlas do
 
   defp full_year_2026_regions do
     KusaData.Cache.fetch("regions:2026", 6 * 60 * 60, fn ->
-      case fetch_all_2026(1, []) do
-        {:ok, nodes} -> {:ok, build_regions(nodes)}
-        error -> error
+      task = Task.async(fn -> fetch_all_2026(1, []) end)
+
+      case Task.yield(task, 8_000) || Task.shutdown(task, :brutal_kill) do
+        {:ok, {:ok, nodes}} -> {:ok, build_regions(nodes)}
+        {:ok, {:error, _} = err} -> err
+        {:ok, _} -> {:error, :unexpected}
+        nil -> {:error, :timeout}
       end
     end)
   end

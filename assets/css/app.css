@@ -151,26 +151,47 @@ body {
   }
 }
 
-/* Atlas visualization primitives (used by atlas.js hook) */
-.atlas-canvas { width: 100%; height: 520px; position: relative; }
+/* Atlas blocky primitives — square, hard 1px, no softness */
+.atlas-canvas {
+  width: 100%;
+  position: relative;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  border-radius: 0;
+  overflow: hidden;
+}
+.atlas-canvas.atlas-canvas-network { height: 520px; }
 .atlas-svg { display: block; width: 100%; height: 100%; }
-.atlas-grid-line { stroke: var(--color-line); stroke-width: 1; opacity: 0.1; }
+.atlas-grid-line { stroke: var(--color-line); stroke-width: 1; opacity: 0.12; }
 .atlas-bubble-fill {
   fill: var(--color-accent);
-  stroke: var(--color-line);
-  stroke-width: 2;
-  transition: fill 0.15s ease, transform 0.15s ease;
+  stroke: var(--color-line-strong);
+  stroke-width: 1;
+  transition: fill 0.15s ease;
 }
 .atlas-bubble:hover .atlas-bubble-fill { fill: var(--color-accent-strong); }
 .atlas-label { fill: var(--color-ink); font-size: 11px; font-weight: 700; }
 .atlas-label-sub { fill: var(--color-muted); font-size: 9px; font-family: var(--font-mono); }
-.atlas-edge { stroke: var(--color-line); stroke-width: 2; opacity: 0.22; }
+.atlas-edge { stroke: var(--color-line); stroke-width: 1; opacity: 0.3; }
 .atlas-node-fill {
   fill: var(--color-surface);
-  stroke: var(--color-line);
-  stroke-width: 2;
+  stroke: var(--color-line-2);
+  stroke-width: 1;
   transition: fill 0.15s ease;
 }
 .atlas-node:hover .atlas-node-fill { fill: var(--color-surface-2); }
-.atlas-node-focal .atlas-node-fill { fill: var(--color-accent); }
+.atlas-node-focal .atlas-node-fill { fill: var(--color-accent); stroke: var(--color-line-strong); }
 .atlas-node-focal .atlas-label { font-weight: 800; }
+.atlas-tile {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  border-radius: 0;
+}
+.atlas-tile:hover { border-color: var(--color-line-2); }
+.atlas-bar { height: 4px; background: var(--color-accent); border-radius: 0; }
+.atlas-table-wrap {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  border-radius: 0;
+  overflow-x: auto;
+}
