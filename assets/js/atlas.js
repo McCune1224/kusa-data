@@ -20,7 +20,6 @@ export const AtlasHook = {
     this.viewBox = { w: this.el.clientWidth || 800, h: this.el.clientHeight || 520 }
     svg.setAttribute("viewBox", `0 0 ${this.viewBox.w} ${this.viewBox.h}`)
 
-    // Register the server->client channel; buffer anything that arrives early.
     this.handleEvent("atlas:data", (data) => {
       if (!this.svg) {
         this.pending.push(data)
@@ -35,6 +34,8 @@ export const AtlasHook = {
       if (data.type === "map") this.drawMap(data.regions)
       else if (data.type === "network") this.drawNetwork(data.graph)
     }
+
+    this.pushEvent("request-atlas", {})
   },
 
   updated() {},

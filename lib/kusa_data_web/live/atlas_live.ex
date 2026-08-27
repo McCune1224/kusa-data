@@ -36,12 +36,22 @@ defmodule KusaDataWeb.AtlasLive do
         {:noreply, socket}
 
       _ ->
-        {:noreply, spawn_map(assign(socket, view: :map, loading: true, error: nil))}
+        map_data = Atlas.map_data()
+
+        {:noreply,
+         socket
+         |> assign(view: :map, map_data: map_data, loading: false, error: nil)
+         |> push_event("atlas:data", %{type: "map", regions: map_data})}
     end
   end
 
   def handle_params(_params, _uri, socket) do
-    {:noreply, spawn_map(assign(socket, view: :map, loading: true, error: nil))}
+    map_data = Atlas.map_data()
+
+    {:noreply,
+     socket
+     |> assign(view: :map, map_data: map_data, loading: false, error: nil)
+     |> push_event("atlas:data", %{type: "map", regions: map_data})}
   end
 
   @impl true
@@ -75,23 +85,28 @@ defmodule KusaDataWeb.AtlasLive do
     end
   end
 
+  def handle_event("request-atlas", _params, socket) do
+    socket =
+      cond do
+        socket.assigns.view == :map and socket.assigns.map_data != [] ->
+          push_event(socket, "atlas:data", %{type: "map", regions: socket.assigns.map_data})
+
+        socket.assigns.view == :network and not is_nil(socket.assigns.graph) ->
+          push_event(socket, "atlas:data", %{type: "network", graph: socket.assigns.graph})
+
+        true ->
+          socket
+      end
+
+    {:noreply, socket}
+  end
+
   def handle_event("open-region", %{"country" => country, "state" => state}, socket) do
     {:noreply,
      push_navigate(
        socket,
        ~p"/region/#{URI.encode_www_form(country)}/#{URI.encode_www_form(state)}"
      )}
-  end
-
-  defp spawn_map(socket) do
-    ref = make_ref()
-    parent = self()
-
-    Task.start(fn ->
-      send(parent, {:atlas_loaded, ref, {:ok, Atlas.map_data(), :ok}})
-    end)
-
-    assign(socket, load_ref: ref)
   end
 
   defp spawn_atlas(socket, player_id) do

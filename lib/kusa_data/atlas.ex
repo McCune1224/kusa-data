@@ -156,7 +156,13 @@ defmodule KusaData.Atlas do
   end
 
   defp fetch_all_2026(page, acc) do
-    case Tournaments.browse(%{mode: :past, from: "2026-01-01", to: "2026-12-31", games: :all, page: page}) do
+    case Tournaments.browse(%{
+           mode: :past,
+           from: "2026-01-01",
+           to: "2026-12-31",
+           games: :all,
+           page: page
+         }) do
       {:ok, %{"tournaments" => nodes, "total" => total}, _status} ->
         new_acc = acc ++ (nodes || [])
 

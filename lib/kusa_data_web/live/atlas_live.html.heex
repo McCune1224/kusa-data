@@ -1,17 +1,23 @@
 <Layouts.app flash={@flash} nav={@nav} current_user={@current_user}>
-  <div class="desk-grid animate-fade-up">
-    <div class="mb-5 flex items-center justify-between border-y border-stone-800 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-      <span><span class="mr-2 inline-block size-2 bg-lime-400"></span>Melee geography</span>
+  <div class="animate-fade-up">
+    <div
+      class="mb-5 flex items-center justify-between border-y py-3 text-[10px] font-semibold uppercase tracking-[0.24em]"
+      style="border-color:var(--border); color:var(--muted)"
+    >
+      <span><span class="mr-2 inline-block size-2" style="background:var(--accent)"></span>Melee geography</span>
       <span class="hidden sm:inline">Atlas</span>
-      <span class="text-orange-300">12 — Atlas</span>
+      <span style="color:var(--accent-dark)">12 — Atlas</span>
     </div>
 
     <section>
-      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-lime-300">
+      <p
+        class="text-xs font-semibold uppercase tracking-[0.22em]"
+        style="color:var(--accent-dark)"
+      >
         Where the scene lives
       </p>
       <div class="mt-2 flex flex-wrap items-end justify-between gap-4">
-        <h1 class="text-4xl font-black uppercase tracking-[-0.05em] text-stone-50 sm:text-5xl">
+        <h1 class="text-4xl font-black uppercase tracking-[-0.05em]" style="color:var(--text)">
           <%= if @view == :network do %>
             Player network
           <% else %>
@@ -24,6 +30,9 @@
           </.btn>
         <% end %>
       </div>
+      <p class="mt-2 text-sm" style="color:var(--muted)">
+        {length(@map_data)} regions · {if @graph, do: length(@graph["nodes"]), else: 0} players in network · 2026 season
+      </p>
     </section>
 
     <section class="mt-10">
@@ -32,11 +41,36 @@
           <:body>The start.gg API may be unavailable right now — try again in a moment.</:body>
         </.empty_state>
       <% else %>
-        <div class="relative">
+        <div class="relative card rounded-none p-4" style="border:2px solid var(--border)">
           <%= if @loading do %>
-            <.skeleton class="h-64 w-full rounded-xl" />
+            <.skeleton class="h-64 w-full" />
           <% end %>
           <div id="atlas-canvas" phx-hook="AtlasHook" phx-update="ignore" class="atlas-canvas">
+          </div>
+          <div
+            :if={!@loading and @map_data != []}
+            class="mt-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2"
+          >
+            <div
+              :for={region <- @map_data}
+              class="p-3 text-center"
+              style="background:var(--surface2); border:2px solid var(--border)"
+            >
+              <div class="font-black text-sm" style="color:var(--text)">{region["label"]}</div>
+              <div class="text-xs mono" style="color:var(--muted)">
+                {region["attendees"]} · {region["tournaments"]}
+              </div>
+            </div>
+          </div>
+          <div
+            :if={!@loading and @map_data == [] and @graph == nil}
+            class="mt-4 p-4 text-center text-sm"
+            style="background:var(--surface2); border:2px solid var(--border); color:var(--muted)"
+          >
+            No regions with positions yet. The 2026 fetch is warming the cache. Try a player network at <a
+              href="/atlas/player/1"
+              style="color:var(--accent-dark); text-decoration:underline"
+            >/atlas/player/1</a>.
           </div>
         </div>
       <% end %>

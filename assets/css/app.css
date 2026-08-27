@@ -43,12 +43,12 @@
   --color-muted: #52525b;
   --color-accent: #ffcc00;
   --color-accent2: #ff2e7e;
-  --color-lime-50: #fefce8;
-  --color-lime-100: #fef9c3;
-  --color-lime-200: #fef08a;
-  --color-lime-300: #ffdb4d;
-  --color-lime-400: #ffcc00;
-  --color-lime-500: #eab308;
+  --color-lime-50: #f8fafc;
+  --color-lime-100: #f1f5f9;
+  --color-lime-200: #e2e8f0;
+  --color-lime-300: #0f0f0f;
+  --color-lime-400: #0f0f0f;
+  --color-lime-500: #0f0f0f;
   --radius-bento: 0px;
   --radius-card: 0px;
   --radius-chip: 0px;
@@ -317,11 +317,11 @@ body {
   font-weight: 900;
 }
 
-/* Arena fix: lime utilities now map to readable Arena yellow */
-.bg-lime-400 { background-color: var(--accent) !important; color: var(--accent-text) !important; }
-.bg-lime-300 { background-color: #ffdb4d !important; color: var(--accent-text) !important; }
-.text-lime-400, .text-lime-300 { color: var(--accent-dark) !important; }
-.border-lime-400 { border-color: var(--accent) !important; }
+/* Arena fix: lime is now brutalist black, not lime */
+.bg-lime-400 { background-color: var(--text) !important; color: var(--bg) !important; }
+.bg-lime-300 { background-color: var(--text) !important; color: var(--bg) !important; }
+.text-lime-400, .text-lime-300 { color: var(--text) !important; }
+.border-lime-400 { border-color: var(--text) !important; }
 .ring-lime-400\/15 { --tw-ring-color: rgba(255,204,0,0.15) !important; }
 .focus\:border-lime-400\/50:focus { border-color: rgba(255,204,0,0.5) !important; }
 .focus\:ring-lime-400\/15:focus { --tw-ring-color: rgba(255,204,0,0.15) !important; }
