@@ -326,30 +326,33 @@ defmodule KusaDataWeb.CoreComponents do
   attr :rest, :global, include: ~w(phx-disconnected phx-connected)
 
   def flash(assigns) do
-    assigns = assign(assigns, :flash_kind, "flash-#{assigns.kind}")
+    flash_msg = Phoenix.Flash.get(assigns.flash, assigns.kind)
+    assigns = assign(assigns, flash_kind: "flash-#{assigns.kind}", flash_msg: flash_msg)
 
     ~H"""
-    <div
-      id={@id || @flash_kind}
-      class={[
-        "fixed inset-x-0 top-4 z-[60] mx-auto flex max-w-md items-start gap-3 rounded-card border px-4 py-3 shadow-lg",
-        @kind == :info && "border-accent-line bg-surface-2 text-ink",
-        @kind == :error && "border-danger/50 bg-danger-soft text-ink",
-        @hidden && "hidden"
-      ]}
-      {@rest}
-    >
-      <.icon
-        name={(@kind == :error && "hero-exclamation-triangle") || "hero-information-circle"}
-        class="mt-0.5 size-5 text-accent"
-      />
-      <div class="text-sm">
-        <%= if @title do %>
-          <p class="font-semibold">{@title}</p>
-        <% end %>
-        <p class={["text-muted", @title && "text-xs"]}>{Phoenix.Flash.get(@flash, @kind)}</p>
+    <%= if @flash_msg do %>
+      <div
+        id={@id || @flash_kind}
+        class={[
+          "fixed inset-x-0 top-4 z-[60] mx-auto flex max-w-md items-start gap-3 rounded-card border px-4 py-3 shadow-lg",
+          @kind == :info && "border-accent-line bg-surface-2 text-ink",
+          @kind == :error && "border-danger/50 bg-danger-soft text-ink",
+          @hidden && "hidden"
+        ]}
+        {@rest}
+      >
+        <.icon
+          name={(@kind == :error && "hero-exclamation-triangle") || "hero-information-circle"}
+          class="mt-0.5 size-5 text-accent"
+        />
+        <div class="text-sm">
+          <%= if @title do %>
+            <p class="font-semibold">{@title}</p>
+          <% end %>
+          <p class={["text-muted", @title && "text-xs"]}>{@flash_msg}</p>
+        </div>
       </div>
-    </div>
+    <% end %>
     """
   end
 

@@ -93,7 +93,7 @@ defmodule KusaData.GraphQL.Queries do
   defp maybe_put_search(filter, q) when is_binary(q) do
     case String.trim(q) do
       "" -> filter
-      trimmed -> Map.put(filter, :search, %{searchString: trimmed})
+      trimmed -> Map.put(filter, :name, trimmed)
     end
   end
 
@@ -102,7 +102,7 @@ defmodule KusaData.GraphQL.Queries do
   @doc "Filter for text search over tournament name, city, and venue."
   @spec search_filter(map()) :: map()
   def search_filter(%{q: q} = query) when is_binary(q) and q != "" do
-    %{search: %{searchString: String.trim(q)}}
+    %{name: String.trim(q)}
     |> put_games(videogame_ids_for(query))
   end
 
@@ -497,10 +497,41 @@ defmodule KusaData.GraphQL.Queries do
 
   defp videogame_ids_for(query) do
     case Map.get(query, :videogame_ids, Map.get(query, :games)) do
-      :all -> nil
-      nil -> nil
-      ids when is_list(ids) -> Enum.map(ids, &numeric_id/1)
-      other -> numeric_id(other)
+      :all ->
+        nil
+
+      nil ->
+        nil
+
+      ids when is_list(ids) ->
+        ids
+        |> Enum.map(fn
+          id when is_integer(id) ->
+            id
+
+          id when is_binary(id) ->
+            case Integer.parse(id) do
+              {num, ""} ->
+                num
+
+              _ ->
+                case KusaData.Games.by_slug(id) do
+                  %{videogame_id: vid} -> vid
+                  _ -> nil
+                end
+            end
+
+          _ ->
+            nil
+        end)
+        |> Enum.reject(&is_nil/1)
+        |> case do
+          [] -> nil
+          filtered -> filtered
+        end
+
+      other ->
+        numeric_id(other)
     end
   end
 
