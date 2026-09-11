@@ -2,10 +2,10 @@ defmodule KusaData.GraphQL.RateLimiter do
   @moduledoc """
   Sliding-window rate limiter for start.gg requests.
 
-  Blocks callers in `wait/0` until a slot frees up within the window
-  (`limit` requests per `window_ms`, default 60 per minute — under
-  start.gg's 80/min cap to leave headroom for retries). Waiteres are served
-  FIFO as older timestamps age out of the window.
+  Provides a non-blocking `check/0` that returns `{:ok, remaining}` or
+  `{:wait, ms}` so callers can poll independently without serializing
+  through a single GenServer call. Also provides `acquire/0` for callers
+  that prefer to block.
   """
 
   use GenServer
@@ -17,6 +17,16 @@ defmodule KusaData.GraphQL.RateLimiter do
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  @doc """
+  Non-blocking slot check. Returns `{:ok, remaining_slots}` if a slot is
+  available (and immediately consumes one), or `{:wait, ms}` with the
+  milliseconds until the next slot frees up.
+  """
+  @spec check(GenServer.server()) :: {:ok, non_neg_integer()} | {:wait, pos_integer()}
+  def check(limiter \\ __MODULE__) do
+    GenServer.call(limiter, :check, 5_000)
   end
 
   @doc "Blocks the caller until a request slot is available."
@@ -44,6 +54,19 @@ defmodule KusaData.GraphQL.RateLimiter do
   end
 
   @impl true
+  def handle_call(:check, _from, state) do
+    state = prune(state)
+    remaining = state.limit - length(state.timestamps)
+
+    if remaining > 0 do
+      {:reply, {:ok, remaining}, %{state | timestamps: [now() | state.timestamps]}}
+    else
+      wait_ms = wait_ms(state)
+      {:reply, {:wait, wait_ms}, state}
+    end
+  end
+
+  @impl true
   def handle_call(:wait, from, state) do
     state = prune(state)
 
@@ -62,12 +85,21 @@ defmodule KusaData.GraphQL.RateLimiter do
   defp grant(from, state) do
     Process.send_after(self(), :release, state.window_ms)
     GenServer.reply(from, :ok)
-    %{state | timestamps: [System.monotonic_time(:millisecond) | state.timestamps]}
+    %{state | timestamps: [now() | state.timestamps]}
+  end
+
+  defp now, do: System.monotonic_time(:millisecond)
+
+  defp wait_ms(%{timestamps: []}), do: 100
+
+  defp wait_ms(%{timestamps: timestamps, window_ms: window_ms}) do
+    oldest = List.last(timestamps)
+    max(100, window_ms - (now() - oldest))
   end
 
   defp prune(state) do
-    now = System.monotonic_time(:millisecond)
-    timestamps = Enum.reject(state.timestamps, fn ts -> now - ts >= state.window_ms end)
+    cutoff = now() - state.window_ms
+    timestamps = Enum.reject(state.timestamps, fn ts -> ts < cutoff end)
     %{state | timestamps: timestamps}
   end
 

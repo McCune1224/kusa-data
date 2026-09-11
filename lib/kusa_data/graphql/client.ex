@@ -10,6 +10,7 @@ defmodule KusaData.GraphQL.Client do
   @endpoint "https://api.start.gg/gql/alpha"
   @max_retries 3
   @base_backoff_ms 1_000
+  @check_interval_ms 50
 
   alias KusaData.GraphQL.RateLimiter
 
@@ -17,7 +18,7 @@ defmodule KusaData.GraphQL.Client do
   def query({document, variables}), do: query(document, variables)
 
   def query(document, variables \\ %{}) when is_binary(document) do
-    RateLimiter.wait()
+    acquire_slot()
     request(document, variables, 0)
   end
 
@@ -50,6 +51,17 @@ defmodule KusaData.GraphQL.Client do
   end
 
   def query_paged(query_fn, _per_page), do: query(query_fn.(10))
+
+  defp acquire_slot do
+    case RateLimiter.check() do
+      {:ok, _remaining} ->
+        :ok
+
+      {:wait, ms} ->
+        Process.sleep(min(ms, @check_interval_ms))
+        acquire_slot()
+    end
+  end
 
   defp request(document, variables, retries) do
     body = %{"query" => document, "variables" => variables}

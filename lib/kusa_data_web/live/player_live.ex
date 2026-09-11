@@ -7,7 +7,14 @@ defmodule KusaDataWeb.PlayerLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, player_id: nil, game: nil, player: %{}, card: %{})}
+    {:ok,
+     assign(socket,
+       player_id: nil,
+       game: nil,
+       player: %{},
+       card: %{},
+       loading: false
+     )}
   end
 
   @impl true
@@ -19,10 +26,26 @@ defmodule KusaDataWeb.PlayerLive do
       socket
       |> assign(:player_id, player_id)
       |> assign(:game, game)
-      |> assign(:player, safe_profile(player_id))
-      |> assign(:card, safe_card(player_id, game))
+      |> assign(:player, %{})
+      |> assign(:card, %{})
+      |> assign(:loading, true)
+      |> start_async(:profile_task, fn -> safe_profile(player_id) end)
+      |> start_async(:card_task, fn -> safe_card(player_id, game) end)
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_async(:profile_task, {:ok, player}, socket) do
+    {:noreply, assign(socket, player: player)}
+  end
+
+  def handle_async(:card_task, {:ok, card}, socket) do
+    {:noreply, assign(socket, card: card, loading: false)}
+  end
+
+  def handle_async(_name, {:error, _reason}, socket) do
+    {:noreply, assign(socket, loading: false)}
   end
 
   defp parse_id(id) when is_binary(id) do
@@ -71,7 +94,11 @@ defmodule KusaDataWeb.PlayerLive do
               <div>
                 <div class="flex items-center gap-2">
                   <h1 class="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-                    {@player["gamer_tag"] || "Player"}
+                    <%= if @loading && @player == %{} do %>
+                      <span class="inline-block h-9 w-48 animate-pulse rounded bg-surface-2" />
+                    <% else %>
+                      {@player["gamer_tag"] || "Player"}
+                    <% end %>
                   </h1>
                   <%= if @player["prefix"] do %>
                     <.badge variant={:accent}>{@player["prefix"]}</.badge>
@@ -89,15 +116,21 @@ defmodule KusaDataWeb.PlayerLive do
 
         <%!-- Career stats --%>
         <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <.stat
-            label="Win rate"
-            value={Format.percent(@card["win_rate"])}
-            sub={"#{@card["wins"] || 0}W / #{@card["losses"] || 0}L"}
-          />
-          <.stat label="Wins" value={to_string(@card["wins"] || 0)} />
-          <.stat label="Losses" value={to_string(@card["losses"] || 0)} />
-          <.stat label="Sets seen" value={to_string(@card["sets_seen"] || 0)} />
-          <.stat label="Events entered" value={to_string(@card["events_entered"] || 0)} />
+          <%= if @loading && @card == %{} do %>
+            <%= for _ <- 1..5 do %>
+              <div class="h-20 rounded-none border border-line bg-surface animate-pulse" />
+            <% end %>
+          <% else %>
+            <.stat
+              label="Win rate"
+              value={Format.percent(@card["win_rate"])}
+              sub={"#{@card["wins"] || 0}W / #{@card["losses"] || 0}L"}
+            />
+            <.stat label="Wins" value={to_string(@card["wins"] || 0)} />
+            <.stat label="Losses" value={to_string(@card["losses"] || 0)} />
+            <.stat label="Sets seen" value={to_string(@card["sets_seen"] || 0)} />
+            <.stat label="Events entered" value={to_string(@card["events_entered"] || 0)} />
+          <% end %>
         </section>
 
         <%!-- Quick links to sub-pages --%>
@@ -125,39 +158,47 @@ defmodule KusaDataWeb.PlayerLive do
         <%!-- Recent placements --%>
         <section>
           <h2 class="font-display text-xl font-semibold text-ink">Recent placements</h2>
-          <%= if Enum.empty?(@card["finishes"] || []) do %>
-            <.empty
-              class="mt-6"
-              icon="hero-trophy"
-              title="No placements yet"
-              description="Results will appear here once this player has entered events."
-            />
+          <%= if @loading && @card == %{} do %>
+            <div class="mt-4 space-y-2">
+              <%= for _ <- 1..5 do %>
+                <div class="h-12 rounded-none border border-line bg-surface animate-pulse" />
+              <% end %>
+            </div>
           <% else %>
-            <.table class="mt-4">
-              <table>
-                <thead>
-                  <tr class="border-b border-line text-left text-xs uppercase tracking-[0.08em] text-muted">
-                    <th class="px-4 py-3 font-medium">Event</th>
-                    <th class="px-4 py-3 font-medium">Placement</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <%= for finish <- @card["finishes"] do %>
-                    <tr class="border-b border-line/60 transition-colors hover:bg-surface-2">
-                      <td class="px-4 py-3">
-                        <.link
-                          navigate={~p"/event/#{finish["event_id"]}"}
-                          class="text-ink transition-colors hover:text-accent"
-                        >
-                          Event #{finish["event_id"]}
-                        </.link>
-                      </td>
-                      <td class="px-4 py-3 text-muted">{finish["placement"]}</td>
+            <%= if Enum.empty?(@card["finishes"] || []) do %>
+              <.empty
+                class="mt-6"
+                icon="hero-trophy"
+                title="No placements yet"
+                description="Results will appear here once this player has entered events."
+              />
+            <% else %>
+              <.table class="mt-4">
+                <table>
+                  <thead>
+                    <tr class="border-b border-line text-left text-xs uppercase tracking-[0.08em] text-muted">
+                      <th class="px-4 py-3 font-medium">Event</th>
+                      <th class="px-4 py-3 font-medium">Placement</th>
                     </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            </.table>
+                  </thead>
+                  <tbody>
+                    <%= for finish <- @card["finishes"] do %>
+                      <tr class="border-b border-line/60 transition-colors hover:bg-surface-2">
+                        <td class="px-4 py-3">
+                          <.link
+                            navigate={~p"/event/#{finish["event_id"]}"}
+                            class="text-ink transition-colors hover:text-accent"
+                          >
+                            Event #{finish["event_id"]}
+                          </.link>
+                        </td>
+                        <td class="px-4 py-3 text-muted">{finish["placement"]}</td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </.table>
+            <% end %>
           <% end %>
         </section>
       </div>

@@ -291,13 +291,17 @@ defmodule KusaDataWeb.AtlasLive do
                 <%= for tile <- @tiles do %>
                   <div class="atlas-tile flex flex-col justify-between rounded-none border border-line bg-surface p-4">
                     <div class="flex items-start justify-between gap-2">
-                      <p class="text-xs font-bold uppercase tracking-[0.08em] text-muted">{tile.label}</p>
+                      <p class="text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                        {tile.label}
+                      </p>
                       <span class="rounded-none border border-line bg-surface-2 px-2 py-0.5 text-xs font-mono font-semibold text-ink">
                         {tile.tournaments}
                       </span>
                     </div>
                     <div class="mt-3">
-                      <p class="font-display text-2xl font-bold tracking-tight text-ink">{tile.tournaments}</p>
+                      <p class="font-display text-2xl font-bold tracking-tight text-ink">
+                        {tile.tournaments}
+                      </p>
                       <p class="text-xs font-mono uppercase tracking-[0.06em] text-faint">
                         {tile.attendees} attendees
                       </p>
@@ -314,8 +318,12 @@ defmodule KusaDataWeb.AtlasLive do
                 <table class="w-full border-collapse text-sm">
                   <thead>
                     <tr class="border-b border-line bg-surface-2 text-left">
-                      <th class="px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">Rank</th>
-                      <th class="px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">Region</th>
+                      <th class="px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                        Rank
+                      </th>
+                      <th class="px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                        Region
+                      </th>
                       <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-[0.08em] text-muted">
                         Tournaments
                       </th>
@@ -339,7 +347,9 @@ defmodule KusaDataWeb.AtlasLive do
 
               <%= if length(@minimap) > 0 do %>
                 <div class="atlas-canvas mt-8 rounded-none border border-line bg-surface p-2">
-                  <p class="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">Minimap · grid-placed · r 6–14</p>
+                  <p class="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                    Minimap · grid-placed · r 6–14
+                  </p>
                   <svg
                     class="atlas-svg"
                     viewBox="0 0 1000 320"

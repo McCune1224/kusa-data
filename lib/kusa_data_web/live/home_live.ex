@@ -6,7 +6,15 @@ defmodule KusaDataWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, section: :home, query: "", upcoming: [], recent: [], results: [])}
+    {:ok,
+     assign(socket,
+       section: :home,
+       query: "",
+       upcoming: [],
+       recent: [],
+       results: [],
+       loading: false
+     )}
   end
 
   @impl true
@@ -15,15 +23,36 @@ defmodule KusaDataWeb.HomeLive do
 
     socket =
       if String.trim(q) != "" do
-        results = safe_browse(%{mode: :search, q: q})["tournaments"] || []
-        assign(socket, section: :search, query: q, results: results)
+        socket
+        |> assign(section: :search, query: q, loading: true)
+        |> start_async(:search_task, fn -> safe_browse(%{mode: :search, q: q}) end)
       else
-        upcoming = safe_browse(%{mode: :upcoming})["tournaments"] || []
-        recent = safe_browse(%{mode: :past, results_only: true})["tournaments"] || []
-        assign(socket, section: :home, query: "", upcoming: upcoming, recent: recent)
+        socket
+        |> assign(section: :home, query: "", loading: true)
+        |> start_async(:upcoming_task, fn -> safe_browse(%{mode: :upcoming}) end)
+        |> start_async(:recent_task, fn ->
+          safe_browse(%{mode: :past, results_only: true})
+        end)
       end
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_async(:search_task, {:ok, results}, socket) do
+    {:noreply, assign(socket, results: results["tournaments"] || [], loading: false)}
+  end
+
+  def handle_async(:upcoming_task, {:ok, upcoming}, socket) do
+    {:noreply, assign(socket, upcoming: upcoming["tournaments"] || [])}
+  end
+
+  def handle_async(:recent_task, {:ok, recent}, socket) do
+    {:noreply, assign(socket, recent: recent["tournaments"] || [], loading: false)}
+  end
+
+  def handle_async(_name, {:error, _reason}, socket) do
+    {:noreply, assign(socket, loading: false)}
   end
 
   defp safe_browse(query) do
@@ -65,21 +94,29 @@ defmodule KusaDataWeb.HomeLive do
       <%= if @section == :search do %>
         <section class="mt-10">
           <h2 class="font-display text-xl font-semibold text-ink">
-            Results for “{@query}”
+            Results for "{@query}"
           </h2>
-          <%= if Enum.empty?(@results) do %>
-            <.empty
-              class="mt-6"
-              icon="hero-magnifying-glass"
-              title="No tournaments found"
-              description="Try a different name, city, or venue."
-            />
-          <% else %>
+          <%= if @loading do %>
             <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <%= for tournament <- @results do %>
-                <.tournament_card tournament={tournament} />
+              <%= for _ <- 1..6 do %>
+                <div class="h-40 rounded-none border border-line bg-surface animate-pulse" />
               <% end %>
             </div>
+          <% else %>
+            <%= if Enum.empty?(@results) do %>
+              <.empty
+                class="mt-6"
+                icon="hero-magnifying-glass"
+                title="No tournaments found"
+                description="Try a different name, city, or venue."
+              />
+            <% else %>
+              <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <%= for tournament <- @results do %>
+                  <.tournament_card tournament={tournament} />
+                <% end %>
+              </div>
+            <% end %>
           <% end %>
         </section>
       <% else %>
@@ -88,36 +125,52 @@ defmodule KusaDataWeb.HomeLive do
             <h2 class="font-display text-xl font-semibold text-ink">Upcoming tournaments</h2>
             <.link navigate={~p"/regions"} class="text-sm font-medium text-accent hover:underline">Browse by region</.link>
           </div>
-          <%= if Enum.empty?(@upcoming) do %>
-            <.empty
-              class="mt-6"
-              icon="hero-calendar"
-              title="No upcoming tournaments"
-              description="Check back soon — the scene never sleeps for long."
-            />
-          <% else %>
+          <%= if @loading && Enum.empty?(@upcoming) do %>
             <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <%= for tournament <- @upcoming do %>
-                <.tournament_card tournament={tournament} />
+              <%= for _ <- 1..6 do %>
+                <div class="h-40 rounded-none border border-line bg-surface animate-pulse" />
               <% end %>
             </div>
+          <% else %>
+            <%= if Enum.empty?(@upcoming) do %>
+              <.empty
+                class="mt-6"
+                icon="hero-calendar"
+                title="No upcoming tournaments"
+                description="Check back soon — the scene never sleeps for long."
+              />
+            <% else %>
+              <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <%= for tournament <- @upcoming do %>
+                  <.tournament_card tournament={tournament} />
+                <% end %>
+              </div>
+            <% end %>
           <% end %>
         </section>
 
         <section class="mt-12">
           <h2 class="font-display text-xl font-semibold text-ink">Recent results</h2>
-          <%= if Enum.empty?(@recent) do %>
-            <.empty
-              class="mt-6"
-              icon="hero-trophy"
-              title="No recent results yet"
-            />
-          <% else %>
+          <%= if @loading && Enum.empty?(@recent) do %>
             <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <%= for tournament <- @recent do %>
-                <.tournament_card tournament={tournament} />
+              <%= for _ <- 1..6 do %>
+                <div class="h-40 rounded-none border border-line bg-surface animate-pulse" />
               <% end %>
             </div>
+          <% else %>
+            <%= if Enum.empty?(@recent) do %>
+              <.empty
+                class="mt-6"
+                icon="hero-trophy"
+                title="No recent results yet"
+              />
+            <% else %>
+              <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <%= for tournament <- @recent do %>
+                  <.tournament_card tournament={tournament} />
+                <% end %>
+              </div>
+            <% end %>
           <% end %>
         </section>
       <% end %>

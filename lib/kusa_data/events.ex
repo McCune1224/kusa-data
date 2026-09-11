@@ -117,14 +117,17 @@ defmodule KusaData.Events do
   Full bracket analytics for an event: seeds + results + sets joined by the
   `BracketEngine`. Cached with the same TTL and invalidation as the raw
   collections, so the UI and the export API share one computation.
+
+  Accepts optional pre-fetched data to avoid redundant cache lookups and API
+  calls when the caller already has one or more of the dependencies.
   """
-  @spec analytics(integer()) :: {:ok, map(), :hit | :miss | :bypass} | {:error, term()}
-  def analytics(event_id) do
+  @spec analytics(integer(), keyword()) :: {:ok, map(), :hit | :miss | :bypass} | {:error, term()}
+  def analytics(event_id, opts \\ []) do
     Cache.fetch("analytics:#{event_id}", 5 * 60, fn ->
-      with {:ok, seeds, _} <- seeding(event_id),
-           {:ok, standings, _} <- results(event_id),
+      with {:ok, seeds, _} <- maybe_seeding(event_id, opts),
+           {:ok, standings, _} <- maybe_results(event_id, opts),
            {:ok, event_sets, _} <- sets(event_id),
-           {:ok, event, _} <- get(event_id) do
+           {:ok, event, _} <- maybe_get(event_id, opts) do
         {:ok,
          %{
            "event" => event,
@@ -135,6 +138,27 @@ defmodule KusaData.Events do
          }}
       end
     end)
+  end
+
+  defp maybe_get(event_id, opts) do
+    case Keyword.fetch(opts, :event) do
+      {:ok, event} -> {:ok, event, :bypass}
+      :error -> get(event_id)
+    end
+  end
+
+  defp maybe_results(event_id, opts) do
+    case Keyword.fetch(opts, :results) do
+      {:ok, results} -> {:ok, results, :bypass}
+      :error -> results(event_id)
+    end
+  end
+
+  defp maybe_seeding(event_id, opts) do
+    case Keyword.fetch(opts, :seeds) do
+      {:ok, seeds} -> {:ok, seeds, :bypass}
+      :error -> seeding(event_id)
+    end
   end
 
   @doc "Drops cached seeds/results/sets/analytics/brackets so the next fetch is fresh."
